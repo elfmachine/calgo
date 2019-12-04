@@ -1,0 +1,19 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" tools:context=".GraphActivity"
+    android:id="@+id/action_settings">
+    <item android:id="@+id/submenu"
+        android:title="Render Options"
+        app:showAsAction="withText" >
+        <menu>
+            <group android:checkableBehavior="single" android:id="@+id/render_options">
+                <item android:id="@+id/draw_everything"
+                    android:title="Draw Everything" />
+                <item android:id="@+id/only_traversal"
+                    android:title="Only Traversal" />
+                <item android:id="@+id/only_completion"
+                    android:title="Only On Completion" />
+            </group>
+        </menu>
+    </item>
+</menu>
