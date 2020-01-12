@@ -20,22 +20,25 @@ public class GarretsSubStringSolution implements ISolution {
     private IProgressListener listener;
 
     public String getName() {
-        return new String("Ye Solutione of Substring d'Garret");
+        return "Garret's Solution";
     }
     public Object solve(Object problem) {
-        Map<String,Set<String>> solution = new HashMap<String,Set<String>>();
+        Map<String, Set<String>> solution = new HashMap<>();
         Trie dictionaryTrie = new Trie();
 
         Set<String> dictionary = (Set<String>)problem;
+        // Structure dictionary as a trie so it can be accessed easily.
         for (String s: dictionary) {
             dictionaryTrie.add(s);
         }
+        // Look for existence all possible substrings of each word in trie-based dictionary.
+        int prog = 1;
         for (String s: dictionary) {
-            for (int i=0; i<s.length()-1; i++) {
-                for (int j=0; j<s.length()-i; j++) {
-                    String subString = s.substring(j,j+i);
+            for (int subStrSize = s.length() - 2; subStrSize >= 0; subStrSize--) {
+                for (int j = 0; j < s.length() - subStrSize; j++) {
+                    String subString = s.substring(j, j + subStrSize);
                     if (dictionaryTrie.contains(subString)) {
-                        Set<String> entry = solution.get(subString);
+                        Set<String> entry = solution.get(s);
                         if (entry != null) {
                             entry.add(subString);
                         } else {
@@ -46,6 +49,7 @@ public class GarretsSubStringSolution implements ISolution {
                     }
                 }
             }
+            listener.onProgress((int) (prog++ * 100.0 / dictionary.size()));
         }
 
         ArrayList<String> render = new ArrayList<String>();
@@ -55,12 +59,8 @@ public class GarretsSubStringSolution implements ISolution {
                 render.add("  " + v);
             }
         }
-        System.out.println(String.format("Solution (%d results):", render.size()));
-        for (String line : render) {
-            System.out.println(line);
-        }
         solutionRenderer.setup(render, 100, 200);
-        return solution;
+        return render;
     }
 
     public IRenderer getRenderer(Paint p) {

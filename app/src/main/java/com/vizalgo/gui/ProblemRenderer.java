@@ -3,17 +3,25 @@ package com.vizalgo.gui;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Rect;
+import android.support.v7.widget.RecyclerView;
+import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.graphics.Paint;
-import android.widget.ProgressBar;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
 
 import com.garretware.graphtestapp.R;
-import com.vizalgo.domain.*;
+import com.vizalgo.domain.IProblem;
+import com.vizalgo.domain.ISolution;
 import com.vizalgo.primitives.IGenerator;
 import com.vizalgo.primitives.IProgressListener;
 import com.vizalgo.rendering.IRenderer;
+import com.vizalgo.rendering.StringListRenderer;
+
+import java.util.List;
 
 /**
  * Created by garret on 12/11/15.
@@ -34,8 +42,10 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
 
     private IGenerator generator;
 
+    private RecyclerView altView;
+
     public ProblemRenderer(Context context, IProblem problem, ISolution solution,
-                           IRendererListener listener) {
+                           IRendererListener listener, RecyclerView altView) {
         super(context);
         this.context = context;
         holder = getHolder();
@@ -43,6 +53,7 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
         this.problem = problem;
         this.solution = solution;
         this.rendererListener = listener;
+        this.altView = altView;
     }
 
     public void updateGeneratorMethod(int method) {
@@ -52,6 +63,40 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         this.holder = holder;
+    }
+
+    private class TextViewHolder extends RecyclerView.ViewHolder {
+        public TextView mTextView;
+
+        public TextViewHolder(View itemView) {
+            super(itemView);
+            mTextView = (TextView) itemView;
+        }
+    }
+
+    private class TextRecyclerViewAdapter extends RecyclerView.Adapter<TextViewHolder> {
+        List<String> contents;
+
+        public TextRecyclerViewAdapter(List<String> contents) {
+            this.contents = contents;
+        }
+
+        @Override
+        public TextViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            LayoutInflater layoutInflater = LayoutInflater.from(context);
+            View view = layoutInflater.inflate(android.R.layout.simple_list_item_1, parent, false);
+            return new TextViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(TextViewHolder holder, int position) {
+            holder.mTextView.setText(contents.get(position));
+        }
+
+        @Override
+        public int getItemCount() {
+            return contents.size();
+        }
     }
 
     @Override
@@ -73,7 +118,9 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
             // Run the problem
             problem.setRenderer(renderer);
             generator = problem.getGenerator(this);
-            generator.setCoordinates(0, 0, canvas.getWidth(), canvas.getHeight());
+            if (canvas != null) {
+                generator.setCoordinates(0, 0, canvas.getWidth(), canvas.getHeight());
+            }
             renderer.setCanvas(canvas);
             renderer.setHolder(holder);
             switch(renderOption) {
@@ -109,9 +156,21 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
             solutionRenderer.setHolder(holder);
             rendererListener.onProgress(0);
             rendererListener.onRenderStart();
-            Object result = solution.solve(problemRepresentation);
-            canvas = solutionRenderer.getCanvas();
-            renderResult(canvas, result, renderer, solutionRenderer);
+            final Object result = solution.solve(problemRepresentation);
+
+            if (renderer instanceof StringListRenderer) {
+                // Egregious hack: mudge on a shoestring recycler view to show results
+                // TODO: Move this into a subclass that renders directly to the RV.
+                post(new Runnable() {
+                    public void run() {
+                        altView.setAdapter(new TextRecyclerViewAdapter((List<String>) result));
+                        altView.requestLayout();
+                    }
+                });
+            } else {
+                canvas = solutionRenderer.getCanvas();
+                renderResult(canvas, result, renderer, solutionRenderer);
+            }
 
             if (!Thread.currentThread().isInterrupted()) {
                 rendererListener.onProgress(100);
@@ -123,7 +182,9 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
         }
         finally {
             //System.out.println("Tearing down surface");
-            holder.unlockCanvasAndPost(canvas);
+            if (!(renderer instanceof StringListRenderer)) {
+                holder.unlockCanvasAndPost(canvas);
+            }
             rendererListener.onRenderDone();
         }
     }

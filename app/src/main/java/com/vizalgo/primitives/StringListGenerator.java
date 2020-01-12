@@ -5,7 +5,6 @@ import android.content.Context;
 
 import com.garretware.graphtestapp.R;
 import com.vizalgo.domain.problems.StringListDataModel;
-import com.vizalgo.rendering.IRenderer;
 import com.vizalgo.rendering.StringListRenderer;
 
 import java.io.BufferedReader;
@@ -17,8 +16,8 @@ import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.HashSet;
-import java.util.Set;
 import java.util.Hashtable;
+import java.util.Set;
 
 public class StringListGenerator implements IGenerator {
     public enum SupportedMethods { RANDOM_FROM_FILE };
@@ -63,10 +62,6 @@ public class StringListGenerator implements IGenerator {
             }
             for (int i = 0; i < numberOfWords; i++)
                 stringList.add(dictionary.get((int) (Math.random() * dictionary.size()) % dictionary.size()));
-            System.out.println(String.format("Generated %d random strings:", numberOfWords));
-            for (String w : stringList) {
-                System.out.println(w);
-            }
             renderer.setup(stringList, 0, 100);
             return stringList;
         }

@@ -16,6 +16,9 @@ public class StringListRenderer implements IRenderer {
     private int left, right;
 
     public void render() {
+        if (canvas == null) {
+            return;
+        }
         int x = left, y = 0;
         Paint p = new Paint();
         Typeface tf = Typeface.create("Arial", Typeface.NORMAL);

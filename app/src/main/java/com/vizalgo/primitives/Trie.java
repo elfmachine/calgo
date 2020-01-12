@@ -10,7 +10,7 @@ public class Trie {
         if (node.isEmpty()) {
             return;
         }
-        addTrieNode(trie, 0, node);
+        traverseForAdd(trie, 0, node);
     }
 
     // Traverse Trie to determine if the string is contained in the dictionary.
@@ -32,7 +32,7 @@ public class Trie {
     }
 
     // Util method to call recursively on subnodes to add a new node to the Trie.
-    private static TrieNode addTrieNode(Map<Character, TrieNode> trie, int index, String word) {
+    private static TrieNode traverseForAdd(Map<Character, TrieNode> trie, int index, String word) {
         TrieNode trieNode;
         char c = word.charAt(index);
         if (trie.containsKey(c)) {
@@ -46,7 +46,7 @@ public class Trie {
         if (index == word.length()) {
             trieNode.words.add(word);
         } else {
-            addTrieNode(trieNode.subNodes, index, word);
+            traverseForAdd(trieNode.subNodes, index, word);
         }
         return trieNode;
     }

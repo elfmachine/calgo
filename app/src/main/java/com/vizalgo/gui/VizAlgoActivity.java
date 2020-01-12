@@ -3,10 +3,12 @@ package com.vizalgo.gui;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -14,18 +16,23 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
-
-import java.util.*;
 
 import com.garretware.graphtestapp.R;
 import com.vizalgo.domain.IProblem;
 import com.vizalgo.domain.ISolution;
 import com.vizalgo.domain.ProblemFactory;
 import com.vizalgo.domain.problems.AdjacencyListGraphDataModel;
+
+import java.util.ArrayList;
+import java.util.Dictionary;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 public class VizAlgoActivity extends AppCompatActivity implements IRendererListener,
         AdapterView.OnItemSelectedListener {
@@ -146,9 +153,19 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
         setSupportActionBar(toolbar);
         setupSpinners();
 
+        // TODO: Clean this garbage up.
         LinearLayout rootLayout = (LinearLayout)findViewById(R.id.vizalgo_root_view);
-        problemRenderer = new ProblemRenderer(this, currentProblem, currentSolution, this);
-        rootLayout.addView(problemRenderer);
+        FrameLayout renderLayout = new FrameLayout(this);
+        renderLayout.setLayoutParams(new FrameLayout.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.MATCH_PARENT));
+        RecyclerView rv = new RecyclerView(this);
+        rv.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.MATCH_PARENT));
+        rv.setLayoutManager(new LinearLayoutManager(this));
+        problemRenderer = new ProblemRenderer(this, currentProblem, currentSolution, this, rv);
+        problemRenderer.setVisibility(View.INVISIBLE);
+        renderLayout.addView(problemRenderer);
+        renderLayout.addView(rv);
+        rootLayout.addView(renderLayout);
+        //rootLayout.addView(problemRenderer);
         currentSolution.setProgressListener(problemRenderer);
 
         progressBar = (ProgressBar)findViewById(R.id.progressBar);
