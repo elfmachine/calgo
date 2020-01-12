@@ -60,6 +60,10 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
         generatorMethod = method;
     }
 
+    public void updateSolution(ISolution solution) {
+        this.solution = solution;
+    }
+
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         this.holder = holder;
@@ -145,7 +149,9 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
             }
 
             rendererListener.onProgress(0);
+            long time = System.currentTimeMillis();
             rendererListener.onGenerateStart();
+            System.out.println(String.format("Finished generate in %dms", System.currentTimeMillis() - time));
             Object problemRepresentation = generator.generate(generatorMethod);
             if (Thread.currentThread().isInterrupted()) {
                 System.out.println("Interrupt after generate");
@@ -156,7 +162,9 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
             solutionRenderer.setHolder(holder);
             rendererListener.onProgress(0);
             rendererListener.onRenderStart();
+            time = System.currentTimeMillis();
             final Object result = solution.solve(problemRepresentation);
+            System.out.println(String.format("Finished solve in %dms", System.currentTimeMillis() - time));
 
             if (renderer instanceof StringListRenderer) {
                 // Egregious hack: mudge on a shoestring recycler view to show results

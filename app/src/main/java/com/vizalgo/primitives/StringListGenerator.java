@@ -20,7 +20,9 @@ import java.util.Hashtable;
 import java.util.Set;
 
 public class StringListGenerator implements IGenerator {
-    public enum SupportedMethods { RANDOM_FROM_FILE };
+    public enum SupportedMethods {RANDOM_FROM_FILE, FIRST_N}
+
+    ;
     private Context context;
     private ArrayList<String> dictionary = new ArrayList<String>();
     private Set<String> stringList = new HashSet<String>();
@@ -54,15 +56,20 @@ public class StringListGenerator implements IGenerator {
         }
         int numberOfWords = dataModel.NumberOfStrings;
 
+        if (numberOfWords > dictionary.size()) {
+            throw new InvalidParameterException(
+                    String.format("Requested more words (%d) than available in dictionary (%d)",
+                            numberOfWords, dictionary.size()));
+        }
+
         if (method == SupportedMethods.RANDOM_FROM_FILE.ordinal()) {
-            if (numberOfWords > dictionary.size()) {
-                throw new InvalidParameterException(
-                        String.format("Requested more words (%d) than available in dictionary (%d)",
-                                numberOfWords, dictionary.size()));
-            }
+
             for (int i = 0; i < numberOfWords; i++)
                 stringList.add(dictionary.get((int) (Math.random() * dictionary.size()) % dictionary.size()));
             renderer.setup(stringList, 0, 100);
+            return stringList;
+        } else if (method == SupportedMethods.FIRST_N.ordinal()) {
+            stringList.addAll(dictionary.subList(0, numberOfWords));
             return stringList;
         }
         throw new InvalidParameterException("Generate method" + method + " not supported.");

@@ -56,6 +56,8 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
 
     private Object dataModel;
 
+    private List<ISolution> solutions;
+
     private final static int SHOW_MESSAGE = 1;
     private final static String MESSAGE_TEXT = "message_text";
 
@@ -165,7 +167,6 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
         renderLayout.addView(problemRenderer);
         renderLayout.addView(rv);
         rootLayout.addView(renderLayout);
-        //rootLayout.addView(problemRenderer);
         currentSolution.setProgressListener(problemRenderer);
 
         progressBar = (ProgressBar)findViewById(R.id.progressBar);
@@ -185,6 +186,11 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
         System.out.println("onItemSelected " + pos + "," + id + "on adapter " + parent.getId());
         if (parent.getId() == R.id.generator_spinner) {
             problemRenderer.updateGeneratorMethod(pos);
+        }
+        if (parent.getId() == R.id.solution_spinner) {
+            currentSolution = solutions.get(pos);
+            currentSolution.setProgressListener(problemRenderer);
+            problemRenderer.updateSolution(solutions.get(pos));
         }
     }
 
@@ -218,7 +224,7 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
             et.setText(new Integer(algdm.Edges).toString());
         }
 
-        List<ISolution> solutions = currentProblem.getSolutions(problemRenderer);
+        solutions = currentProblem.getSolutions(problemRenderer);
         List<String> solutionNames = new LinkedList<>();
         for (Iterator it = solutions.iterator();
              it.hasNext(); ) {

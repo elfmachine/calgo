@@ -4,7 +4,8 @@ import android.content.Context;
 
 import com.vizalgo.domain.IProblem;
 import com.vizalgo.domain.ISolution;
-import com.vizalgo.domain.solutions.GarretsSubStringSolution;
+import com.vizalgo.domain.solutions.GarretsNaiveSubStringSolution;
+import com.vizalgo.domain.solutions.GarretsSmartSubStringSolution;
 import com.vizalgo.primitives.IGenerator;
 import com.vizalgo.primitives.IProgressListener;
 import com.vizalgo.primitives.StringListGenerator;
@@ -31,7 +32,8 @@ public class StringsAreSubstringsOfEachOther implements IProblem {
     @Override
     public ArrayList<ISolution> getSolutions(IProgressListener listener) {
         ArrayList<ISolution> s = new ArrayList<ISolution>();
-        s.add(new GarretsSubStringSolution());
+        s.add(new GarretsNaiveSubStringSolution());
+        s.add(new GarretsSmartSubStringSolution());
         return s;
     }
 

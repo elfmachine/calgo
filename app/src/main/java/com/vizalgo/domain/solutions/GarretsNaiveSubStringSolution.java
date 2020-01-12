@@ -14,27 +14,28 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class GarretsSubStringSolution implements ISolution {
+public class GarretsNaiveSubStringSolution implements ISolution {
     private StringListRenderer renderer;
     private StringListRenderer solutionRenderer;
     private IProgressListener listener;
 
     public String getName() {
-        return "Garret's Solution";
+        return "Garret's Naive Solution";
     }
     public Object solve(Object problem) {
         Map<String, Set<String>> solution = new HashMap<>();
         Trie dictionaryTrie = new Trie();
-
         Set<String> dictionary = (Set<String>)problem;
+
         // Structure dictionary as a trie so it can be accessed easily.
         for (String s: dictionary) {
             dictionaryTrie.add(s);
         }
         // Look for existence all possible substrings of each word in trie-based dictionary.
         int prog = 1;
+        int substrings = 0;
         for (String s: dictionary) {
-            for (int subStrSize = s.length() - 2; subStrSize >= 0; subStrSize--) {
+            for (int subStrSize = 0; subStrSize < s.length(); subStrSize++) {
                 for (int j = 0; j < s.length() - subStrSize; j++) {
                     String subString = s.substring(j, j + subStrSize);
                     if (dictionaryTrie.contains(subString)) {
@@ -42,15 +43,23 @@ public class GarretsSubStringSolution implements ISolution {
                         if (entry != null) {
                             entry.add(subString);
                         } else {
-                            entry = new HashSet<String>();
+                            entry = new HashSet<>();
                             entry.add(subString);
                             solution.put(s, entry);
                         }
                     }
                 }
             }
+            if (solution.get(s) != null) {
+                substrings += solution.get(s).size();
+            }
+            if (Thread.currentThread().isInterrupted()) {
+                break;
+            }
             listener.onProgress((int) (prog++ * 100.0 / dictionary.size()));
         }
+        System.out.println(String.format("From %d words, found %d strings with %d substrings",
+                dictionary.size(), solution.size(), substrings));
 
         ArrayList<String> render = new ArrayList<String>();
         for(Map.Entry<String,Set<String>> e : solution.entrySet()) {
