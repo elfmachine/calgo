@@ -10,6 +10,7 @@ import com.vizalgo.rendering.IRenderer;
  */
 public interface IProblem {
     String getName();
+    // TODO: Uhh.. make list, not ArrayList?
     ArrayList<ISolution> getSolutions(IProgressListener listener);
     void setRenderer(IRenderer renderer);
     void setDataModel(Object dataModel);

@@ -14,7 +14,7 @@ import com.vizalgo.rendering.IRenderer;
 /**
  * Created by garret on 12/11/15.
  */
-public class TrajansAlgorithm implements ISolution {
+public class TarjansAlgorithm implements ISolution {
     public String getName() {
         return "Trajan's Algorithm";
     }
@@ -26,19 +26,19 @@ public class TrajansAlgorithm implements ISolution {
 
     public boolean ShowTraversal = true;
 
-    private TrajansAdjacencyListGraph2D traversalGraph;
-    private TrajansAdjacencyListGraph2D solutionGraph;
+    private TarjansAdjacencyListGraph2D traversalGraph;
+    private TarjansAdjacencyListGraph2D solutionGraph;
 
     private AdjacencyList2DGraphRenderer renderer;
     private AdjacencyList2DGraphRenderer solutionRenderer;
 
     private int currentIndex = 0;
 
-    private Stack<TrajansAdjacencyListNode2D> nodeStack = new Stack<>();
+    private Stack<TarjansAdjacencyListNode2D> nodeStack = new Stack<>();
 
     private IProgressListener listener;
 
-    public TrajansAlgorithm() {
+    public TarjansAlgorithm() {
         this.listener = listener;
     }
 
@@ -49,9 +49,9 @@ public class TrajansAlgorithm implements ISolution {
     private int cycles;
 
     public Object solve(Object problemRepresentation) {
-        traversalGraph = new TrajansAdjacencyListGraph2D(
+        traversalGraph = new TarjansAdjacencyListGraph2D(
                 (AdjacencyListGraph<AdjacencyListNode2D>)problemRepresentation, null);
-        solutionGraph = new TrajansAdjacencyListGraph2D(solutionRenderer);
+        solutionGraph = new TarjansAdjacencyListGraph2D(solutionRenderer);
         solutionRenderer.onGraphCreated(solutionGraph);
 
         cycles = 0;
@@ -59,7 +59,7 @@ public class TrajansAlgorithm implements ISolution {
         progressMax = 0;
 
         for (Iterator it = traversalGraph.getAllNodes().entrySet().iterator(); it.hasNext();) {
-            TrajansAdjacencyListNode2D node = (TrajansAdjacencyListNode2D) ((HashMap.Entry) it.next()).getValue();
+            TarjansAdjacencyListNode2D node = (TarjansAdjacencyListNode2D) ((HashMap.Entry) it.next()).getValue();
             progressMax += node.getEdges().size();
         }
         int edgesCount = progressMax;
@@ -68,11 +68,11 @@ public class TrajansAlgorithm implements ISolution {
             if (Thread.currentThread().isInterrupted()) {
                 break;
             }
-            TrajansAdjacencyListNode2D node = (TrajansAdjacencyListNode2D) ((HashMap.Entry) it.next()).getValue();
+            TarjansAdjacencyListNode2D node = (TarjansAdjacencyListNode2D) ((HashMap.Entry) it.next()).getValue();
             if (node.Index == Constants.UNDEFINED) {
-                TrajansAdjacencyListNode2D traversalNode = null;
+                TarjansAdjacencyListNode2D traversalNode = null;
                 if (ShowTraversal) {
-                    traversalNode = new TrajansAdjacencyListNode2D(node, false);
+                    traversalNode = new TarjansAdjacencyListNode2D(node, false);
                     solutionGraph.addNode(traversalNode);
                 }
                 strongConnect(node, traversalNode);
@@ -83,8 +83,7 @@ public class TrajansAlgorithm implements ISolution {
                 + " Edges: " + edgesCount + " Cycles: " + cycles;
     }
 
-    private void strongConnect(TrajansAdjacencyListNode2D node, TrajansAdjacencyListNode2D traversalNode) {
-
+    private void strongConnect(TarjansAdjacencyListNode2D node, TarjansAdjacencyListNode2D traversalNode) {
         // TODO: Verify this.  Currently, most large graphs seem to only have one cycle.
 
         System.out.println("StrongConnect " + node.getDescription() + " with traversal node "
@@ -102,11 +101,11 @@ public class TrajansAlgorithm implements ISolution {
                 return;
             }
             AdjacencyListEdge2D edge = (AdjacencyListEdge2D)node.getEdges().get(i);
-            TrajansAdjacencyListNode2D endNode = (TrajansAdjacencyListNode2D)edge.getEndNode();
+            TarjansAdjacencyListNode2D endNode = (TarjansAdjacencyListNode2D)edge.getEndNode();
             if (endNode.Index == Constants.UNDEFINED) {
-                TrajansAdjacencyListNode2D traversalEndNode = null;
+                TarjansAdjacencyListNode2D traversalEndNode = null;
                 if (ShowTraversal) {
-                    traversalEndNode = new TrajansAdjacencyListNode2D(endNode, false);
+                    traversalEndNode = new TarjansAdjacencyListNode2D(endNode, false);
                     solutionGraph.addNode(traversalEndNode);
                     System.out.println("Connecting " + traversalNode.getDescription() + " to node "
                             + traversalEndNode.getDescription());
@@ -130,17 +129,17 @@ public class TrajansAlgorithm implements ISolution {
             if (node.getIndex() != nodeStack.peek().getIndex()) {
                 System.out.println("Found cycle");
                 cycles++;
-                TrajansAdjacencyListNode2D rootNode = new TrajansAdjacencyListNode2D(node, true);
+                TarjansAdjacencyListNode2D rootNode = new TarjansAdjacencyListNode2D(node, true);
                 solutionGraph.addNode(rootNode);
-                TrajansAdjacencyListNode2D lastNode = rootNode;
-                for (TrajansAdjacencyListNode2D nextNode = nodeStack.pop();
+                TarjansAdjacencyListNode2D lastNode = rootNode;
+                for (TarjansAdjacencyListNode2D nextNode = nodeStack.pop();
                      nextNode.getIndex() != rootNode.getIndex();
                      nextNode = nodeStack.pop()) {
                     if (Thread.currentThread().isInterrupted()) {
                         return;
                     }
                     nextNode.OnStack = false;
-                    nextNode = new TrajansAdjacencyListNode2D(nextNode, true);
+                    nextNode = new TarjansAdjacencyListNode2D(nextNode, true);
                     solutionGraph.addNode(nextNode);
                     solutionGraph.connectNode(nextNode.getIndex(), lastNode.getIndex(), FinalLineColor, 0);
                     lastNode = nextNode;

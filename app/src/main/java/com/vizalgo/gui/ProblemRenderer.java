@@ -148,12 +148,10 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
     }
 
     private void renderResult(Canvas c, Object result, IRenderer renderer, IRenderer solutionRenderer) {
+        // TODO: Find way to avoid rerendering here.
+        renderer.render();
+        solutionRenderer.render();
         if (result instanceof String) {
-
-            // TODO: Find way to avoid rerendering here.
-            renderer.render();
-            solutionRenderer.render();
-
             String s = (String)result;
             Paint p = new Paint();
 

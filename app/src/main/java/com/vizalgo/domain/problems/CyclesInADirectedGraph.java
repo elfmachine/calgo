@@ -6,7 +6,7 @@ import com.vizalgo.domain.*;
 import com.vizalgo.primitives.*;
 import com.vizalgo.rendering.*;
 
-import com.vizalgo.domain.solutions.TrajansAlgorithm;
+import com.vizalgo.domain.solutions.TarjansAlgorithm;
 
 /**
  * Created by garret on 12/11/15.
@@ -15,7 +15,7 @@ public class CyclesInADirectedGraph implements IProblem {
     public int Nodes = 200;
     public int Edges = 200;
 
-    public AdjacencyList2DGraphRenderer renderer;
+    private AdjacencyList2DGraphRenderer renderer;
 
     @Override
     public String getName() {
@@ -51,7 +51,7 @@ public class CyclesInADirectedGraph implements IProblem {
     @Override
     public ArrayList<ISolution> getSolutions(IProgressListener listener) {
         ArrayList<ISolution> s = new ArrayList<ISolution>();
-        s.add(new TrajansAlgorithm());
+        s.add(new TarjansAlgorithm());
         return s;
     }
 }

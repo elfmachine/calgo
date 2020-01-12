@@ -29,7 +29,7 @@ import com.vizalgo.domain.problems.AdjacencyListGraphDataModel;
 
 public class VizAlgoActivity extends AppCompatActivity implements IRendererListener,
         AdapterView.OnItemSelectedListener {
-    private ArrayList<IProblem> problems = ProblemFactory.getProblemSet();
+    private ArrayList<IProblem> problems = ProblemFactory.getProblemSet(this);
 
     private IProblem currentProblem;
 
@@ -71,12 +71,14 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
     public void startSolver(View view) {
         // TODO: Interpret data model and update accordingly rather than hardcoding to specific
         // data model
-        AdjacencyListGraphDataModel algdm = (AdjacencyListGraphDataModel)dataModel;
-        EditText et = (EditText)findViewById(R.id.number_nodes);
-        algdm.Nodes = Integer.valueOf(et.getText().toString());
-        et = (EditText)findViewById(R.id.number_edges);
-        algdm.Edges = Integer.valueOf(et.getText().toString());
-        currentProblem.setDataModel(algdm);
+        if (dataModel instanceof AdjacencyListGraphDataModel) {
+            AdjacencyListGraphDataModel algdm = (AdjacencyListGraphDataModel) dataModel;
+            EditText et = (EditText) findViewById(R.id.number_nodes);
+            algdm.Nodes = Integer.valueOf(et.getText().toString());
+            et = (EditText) findViewById(R.id.number_edges);
+            algdm.Edges = Integer.valueOf(et.getText().toString());
+        }
+        currentProblem.setDataModel(dataModel);
         if (runThread == null) {
             runThread = new Thread(problemRenderer);
             runThread.start();
@@ -184,23 +186,26 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
         setupSpinner(problemNames, R.id.problem_spinner);
 
         // TODO: Save and read from storage
-        currentProblem = problems.get(0);
+        // TODO: Create problem selector
+        currentProblem = problems.get(1);
 
         // TODO: Interpret data model and set up GUI accordingly rather than hardcoding to
         // specific data model and representation
         dataModel = currentProblem.getDefaultDataModel();
 
-        AdjacencyListGraphDataModel algdm = (AdjacencyListGraphDataModel)dataModel;
-        EditText et = (EditText)findViewById(R.id.number_nodes);
-        et.setText(new Integer(algdm.Nodes).toString());
-        et = (EditText)findViewById(R.id.number_edges);
-        et.setText(new Integer(algdm.Edges).toString());
+        if (dataModel instanceof AdjacencyListGraphDataModel) {
+            AdjacencyListGraphDataModel algdm = (AdjacencyListGraphDataModel) dataModel;
+            EditText et = (EditText) findViewById(R.id.number_nodes);
+            et.setText(new Integer(algdm.Nodes).toString());
+            et = (EditText) findViewById(R.id.number_edges);
+            et.setText(new Integer(algdm.Edges).toString());
+        }
 
         List<ISolution> solutions = currentProblem.getSolutions(problemRenderer);
         List<String> solutionNames = new LinkedList<>();
         for (Iterator it = solutions.iterator();
              it.hasNext(); ) {
-            solutionNames.add(((Iterator<ISolution>)it).next().getName());
+            solutionNames.add(((Iterator<ISolution>) it).next().getName());
         }
 
         setupSpinner(solutionNames, R.id.solution_spinner);
@@ -208,7 +213,7 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
         // TODO: This is ugly.  Have a class with generator meta info.
         Dictionary<Integer, String> generators = currentProblem.getGenerator(null).getMethods();
         LinkedList<String> names = new LinkedList<>();
-        for (int i=0; i<generators.size(); i++) {
+        for (int i = 0; i < generators.size(); i++) {
             names.add(generators.get(i));
         }
 
