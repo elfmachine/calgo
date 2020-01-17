@@ -5,10 +5,15 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.view.SurfaceHolder;
 
+import com.vizalgo.primitives.AdjacencyListEdge2D;
+import com.vizalgo.primitives.AdjacencyListGraph;
+import com.vizalgo.primitives.AdjacencyListNode2D;
+import com.vizalgo.primitives.IAdjacencyListChangeListener;
+import com.vizalgo.primitives.IAdjacencyListGraphEdgeType;
+import com.vizalgo.primitives.IAdjacencyListGraphNodeType;
+
 import java.util.HashMap;
 import java.util.Iterator;
-
-import com.vizalgo.primitives.*;
 
 /**
  * Created by garret on 12/11/15.
@@ -49,10 +54,6 @@ public class AdjacencyList2DGraphRenderer implements
         canvas = c;
     }
 
-    @Override
-    public Canvas getCanvas() {
-        return canvas;
-    }
 
     @Override
     public void setHolder(SurfaceHolder s) {
@@ -82,7 +83,6 @@ public class AdjacencyList2DGraphRenderer implements
         }
     }
 
-    @Override
     public void setRenderOptions(boolean drawOnNewEdge, boolean drawOnNewNode, boolean drawOnComplete) {
         this.drawOnNewEdge = drawOnNewEdge;
         this.drawOnNewNode = drawOnNewNode;
@@ -97,6 +97,16 @@ public class AdjacencyList2DGraphRenderer implements
     @Override
     public IRenderer getBaseRenderer() {
         return baseRenderer;
+    }
+
+    @Override
+    public boolean supportsCanvas() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsRecyclerView() {
+        return false;
     }
 
     @Override
@@ -185,4 +195,5 @@ public class AdjacencyList2DGraphRenderer implements
 
         canvas.drawLine(start.getX(), start.getY(), end.getX(), end.getY(), paint);
     }
+
 }

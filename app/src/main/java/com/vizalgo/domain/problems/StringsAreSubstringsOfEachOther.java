@@ -15,7 +15,7 @@ import com.vizalgo.rendering.StringListRenderer;
 import java.util.ArrayList;
 
 public class StringsAreSubstringsOfEachOther implements IProblem {
-    private static final int DEFAULT_NUMBER_OF_STRINGS = 200000;
+    private static final int DEFAULT_NUMBER_OF_STRINGS = 1000;
     private StringListDataModel dataModel;
     private Context context;
     private StringListRenderer renderer;

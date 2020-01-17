@@ -2,6 +2,7 @@ package com.vizalgo.gui;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.PixelFormat;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -34,6 +35,9 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import static android.view.View.INVISIBLE;
+import static android.view.View.VISIBLE;
+
 public class VizAlgoActivity extends AppCompatActivity implements IRendererListener,
         AdapterView.OnItemSelectedListener {
     private ArrayList<IProblem> problems = ProblemFactory.getProblemSet(this);
@@ -42,7 +46,8 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
 
     private ISolution currentSolution;
 
-    private ProblemRenderer problemRenderer = null;
+    private ProblemRenderer problemRenderer;
+    private RecyclerView recyclerView;
 
     private Thread runThread;
 
@@ -58,8 +63,11 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
 
     private List<ISolution> solutions;
 
+    private boolean renderError;
+
     private final static int SHOW_MESSAGE = 1;
-    private final static String MESSAGE_TEXT = "message_text";
+
+    private SharedPreferences sharedPref;
 
     public VizAlgoActivity() {
         messageHandler = new Handler(Looper.getMainLooper()) {
@@ -78,6 +86,7 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
     }
 
     public void startSolver(View view) {
+        renderError = false;
         // TODO: Interpret data model and update accordingly rather than hardcoding to specific
         // data model
         if (dataModel instanceof AdjacencyListGraphDataModel) {
@@ -87,7 +96,14 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
             et = (EditText) findViewById(R.id.number_edges);
             algdm.Edges = Integer.valueOf(et.getText().toString());
         }
+
+        problemRenderer.setVisibility(VISIBLE);
+        recyclerView.setVisibility(INVISIBLE);
+        problemRenderer.setZOrderOnTop(true);
+        problemRenderer.getHolder().setFormat(PixelFormat.TRANSLUCENT);
+
         currentProblem.setDataModel(dataModel);
+
         if (runThread == null) {
             runThread = new Thread(problemRenderer);
             runThread.start();
@@ -107,10 +123,6 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_graph, menu);
-
-        // Load render option
-        SharedPreferences sharedPref = getSharedPreferences(
-                getString(R.string.preference_file_key), Context.MODE_PRIVATE);
 
         renderOption = sharedPref.getInt("renderOption", -1);
 
@@ -133,10 +145,7 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
         System.out.println("onOptionsItemSelected " + id);
         if (item.isCheckable()) {
             item.setChecked(true);
-            SharedPreferences.Editor e  = getSharedPreferences(
-                    getString(R.string.preference_file_key), Context.MODE_PRIVATE).edit();
-            e.putInt("renderOption", id);
-            e.apply();
+            setPrefInt("renderOption", id);
         }
 
         //noinspection SimplifiableIfStatement
@@ -147,25 +156,44 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
         return super.onOptionsItemSelected(item);
     }
 
+    private void setPrefInt(String option, int value) {
+        SharedPreferences.Editor e = getSharedPreferences(
+                getString(R.string.preference_file_key), Context.MODE_PRIVATE).edit();
+        e.putInt(option, value);
+        e.apply();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        sharedPref = getSharedPreferences(
+                getString(R.string.preference_file_key), Context.MODE_PRIVATE);
+
         setContentView(R.layout.activity_viz_algo);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        List<String> problemNames = new LinkedList<>();
+        for (Iterator it = problems.iterator();
+             it.hasNext(); ) {
+            problemNames.add(((Iterator<IProblem>) it).next().getName());
+        }
+
+        setupSpinner(problemNames, R.id.problem_spinner);
+
         setupSpinners();
 
         // TODO: Clean this garbage up.
         LinearLayout rootLayout = (LinearLayout)findViewById(R.id.vizalgo_root_view);
         FrameLayout renderLayout = new FrameLayout(this);
         renderLayout.setLayoutParams(new FrameLayout.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.MATCH_PARENT));
-        RecyclerView rv = new RecyclerView(this);
-        rv.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.MATCH_PARENT));
-        rv.setLayoutManager(new LinearLayoutManager(this));
-        problemRenderer = new ProblemRenderer(this, currentProblem, currentSolution, this, rv);
-        problemRenderer.setVisibility(View.INVISIBLE);
+        recyclerView = new RecyclerView(this);
+        recyclerView.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.MATCH_PARENT));
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        problemRenderer = new ProblemRenderer(this, currentProblem, currentSolution, this, recyclerView);
         renderLayout.addView(problemRenderer);
-        renderLayout.addView(rv);
+        renderLayout.addView(recyclerView);
         rootLayout.addView(renderLayout);
         currentSolution.setProgressListener(problemRenderer);
 
@@ -184,6 +212,11 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
     public void onItemSelected(AdapterView<?> parent, View view,
                                int pos, long id) {
         System.out.println("onItemSelected " + pos + "," + id + "on adapter " + parent.getId());
+        if (parent.getId() == R.id.problem_spinner) {
+            setPrefInt("problem", pos);
+            setupSpinners();
+            problemRenderer.updateProblem(currentProblem);
+        }
         if (parent.getId() == R.id.generator_spinner) {
             problemRenderer.updateGeneratorMethod(pos);
         }
@@ -200,17 +233,10 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
     }
 
     private void setupSpinners() {
-        List<String> problemNames = new LinkedList<>();
-        for (Iterator it = problems.iterator();
-                it.hasNext(); ) {
-            problemNames.add(((Iterator<IProblem>)it).next().getName());
-        }
-
-        setupSpinner(problemNames, R.id.problem_spinner);
 
         // TODO: Save and read from storage
         // TODO: Create problem selector
-        currentProblem = problems.get(1);
+        currentProblem = problems.get(sharedPref.getInt("problem", 0));
 
         // TODO: Interpret data model and set up GUI accordingly rather than hardcoding to
         // specific data model and representation
@@ -281,8 +307,16 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
     }
 
     @Override
+    public void onRenderError(String error) {
+        renderError = true;
+    }
+
+    @Override
     public void onRenderDone() {
         runThread = null;
+        if (renderError) {
+            setStatusText("Error!", 0xff800080);
+        }
         if (!cancelled) {
             setStatusText("Done!", 0xff00a080);
         }

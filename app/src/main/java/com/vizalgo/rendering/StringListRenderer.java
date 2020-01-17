@@ -48,6 +48,16 @@ public class StringListRenderer implements IRenderer {
         return null;
     }
 
+    @Override
+    public boolean supportsCanvas() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsRecyclerView() {
+        return true;
+    }
+
     public void setup(Collection<String> stringList, int left, int right) {
         this.stringList = stringList;
         this.left = left;

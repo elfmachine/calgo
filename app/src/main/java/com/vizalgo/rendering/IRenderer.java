@@ -9,8 +9,10 @@ import android.view.SurfaceHolder;
 public interface IRenderer {
     void render();
     void setCanvas(Canvas c);
-    Canvas getCanvas();
     void setHolder(SurfaceHolder s);
-    void setRenderOptions(boolean drawOnNewEdge, boolean drawOnNewNode, boolean drawOnComplete);
     IRenderer getBaseRenderer();
+
+    boolean supportsCanvas();
+
+    boolean supportsRecyclerView();
 }

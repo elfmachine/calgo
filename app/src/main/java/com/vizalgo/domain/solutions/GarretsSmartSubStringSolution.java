@@ -48,9 +48,8 @@ public class GarretsSmartSubStringSolution implements ISolution {
         int prog = 1;
         int substrings = 0;
         for (String s : sortedList) {
-            int start = 0, end = s.length();
             for (int subStrSize = s.length() - 1; subStrSize >= 0; subStrSize--) {
-                for (int j = start; j < Math.min(s.length() - subStrSize, end); j++) {
+                for (int j = 0; j < s.length() - subStrSize; j++) {
                     String subString = s.substring(j, j + subStrSize);
                     if (dictionaryTrie.contains(subString)) {
                         Set<String> entry = solution.get(s);
@@ -67,13 +66,7 @@ public class GarretsSmartSubStringSolution implements ISolution {
                         if (leafStrings != null) {
                             entry.addAll(leafStrings);
                         }
-                        if (j == 0) {
-                            // ??
-                            //start = subStrSize;
-                        } else if (j + subStrSize == s.length()) {
-                            //end = j;
-                        }
-                        // TODO: bifurcate string and run algorithm on ends
+                        // TODO: Save begin and end offset, check all offsets on future iterations.
                     }
                 }
             }

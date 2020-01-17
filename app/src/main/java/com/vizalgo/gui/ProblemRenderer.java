@@ -18,8 +18,8 @@ import com.vizalgo.domain.IProblem;
 import com.vizalgo.domain.ISolution;
 import com.vizalgo.primitives.IGenerator;
 import com.vizalgo.primitives.IProgressListener;
+import com.vizalgo.rendering.AdjacencyList2DGraphRenderer;
 import com.vizalgo.rendering.IRenderer;
-import com.vizalgo.rendering.StringListRenderer;
 
 import java.util.List;
 
@@ -54,6 +54,10 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
         this.solution = solution;
         this.rendererListener = listener;
         this.altView = altView;
+    }
+
+    public void updateProblem(IProblem problem) {
+        this.problem = problem;
     }
 
     public void updateGeneratorMethod(int method) {
@@ -107,8 +111,8 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
     public void run() {
         System.out.println("Start render run");
         // Test
-        Canvas canvas;
-        IRenderer renderer = solution.getRenderer(new Paint());
+        final Canvas canvas;
+        final IRenderer renderer = solution.getRenderer(new Paint());
         SharedPreferences sharedPref = context.getSharedPreferences(
                 context.getString(R.string.preference_file_key), Context.MODE_PRIVATE);
 
@@ -116,7 +120,11 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
 
         System.out.println("ProblemRenderer: Render option is " + renderOption);
         IRenderer solutionRenderer = solution.getSolutionRenderer(new Paint());
-        canvas = holder.lockCanvas(null);
+        if (renderer.supportsCanvas() || solutionRenderer.supportsCanvas()) {
+            canvas = holder.lockCanvas(null);
+        } else {
+            canvas = null;
+        }
         try
         {
             // Run the problem
@@ -125,23 +133,39 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
             if (canvas != null) {
                 generator.setCoordinates(0, 0, canvas.getWidth(), canvas.getHeight());
             }
-            renderer.setCanvas(canvas);
-            renderer.setHolder(holder);
-            switch(renderOption) {
-                case R.id.draw_everything:
-                    renderer.setRenderOptions(true, false, true);
-                    solutionRenderer.setRenderOptions(true, true, true);
-                    break;
+            if (renderer.supportsCanvas()) {
+                renderer.setCanvas(canvas);
+                renderer.setHolder(holder);
+            }
 
-                case R.id.only_completion:
-                    renderer.setRenderOptions(false, false, true);
-                    solutionRenderer.setRenderOptions(false, false, true);
-                    break;
+            if (renderer instanceof AdjacencyList2DGraphRenderer) {
+                AdjacencyList2DGraphRenderer adjacencyList2DGraphRenderer = (AdjacencyList2DGraphRenderer) renderer;
+                AdjacencyList2DGraphRenderer adjacencyList2DGraphSolutionRenderer = null;
+                if (solutionRenderer instanceof AdjacencyList2DGraphRenderer) {
+                    adjacencyList2DGraphSolutionRenderer = (AdjacencyList2DGraphRenderer) solutionRenderer;
+                }
+                switch (renderOption) {
+                    case R.id.draw_everything:
+                        adjacencyList2DGraphRenderer.setRenderOptions(true, false, true);
+                        if (adjacencyList2DGraphSolutionRenderer != null) {
+                            adjacencyList2DGraphSolutionRenderer.setRenderOptions(true, true, true);
+                        }
+                        break;
 
-                case R.id.only_traversal:
-                    renderer.setRenderOptions(false, false, true);
-                    solutionRenderer.setRenderOptions(true, true, true);
-                    break;
+                    case R.id.only_completion:
+                        adjacencyList2DGraphRenderer.setRenderOptions(false, false, true);
+                        if (adjacencyList2DGraphSolutionRenderer != null) {
+                            adjacencyList2DGraphSolutionRenderer.setRenderOptions(false, false, true);
+                        }
+                        break;
+
+                    case R.id.only_traversal:
+                        adjacencyList2DGraphRenderer.setRenderOptions(false, false, true);
+                        if (adjacencyList2DGraphSolutionRenderer != null) {
+                            adjacencyList2DGraphSolutionRenderer.setRenderOptions(true, true, true);
+                        }
+                        break;
+                }
             }
             if (Thread.currentThread().isInterrupted()) {
                 System.out.println("Interrupt before generate");
@@ -157,26 +181,30 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
                 System.out.println("Interrupt after generate");
                 return;
             }
-            canvas = renderer.getCanvas();
-            solutionRenderer.setCanvas(canvas);
-            solutionRenderer.setHolder(holder);
+            if (solutionRenderer.supportsCanvas()) {
+                solutionRenderer.setCanvas(canvas);
+                solutionRenderer.setHolder(holder);
+            }
             rendererListener.onProgress(0);
             rendererListener.onRenderStart();
             time = System.currentTimeMillis();
             final Object result = solution.solve(problemRepresentation);
             System.out.println(String.format("Finished solve in %dms", System.currentTimeMillis() - time));
 
-            if (renderer instanceof StringListRenderer) {
-                // Egregious hack: mudge on a shoestring recycler view to show results
-                // TODO: Move this into a subclass that renders directly to the RV.
+            if (renderer.supportsRecyclerView()) {
                 post(new Runnable() {
                     public void run() {
+                        if (renderer.supportsCanvas()) {
+                            //setBackgroundColor(0xf0f0f0f0);
+                        }
+                        //invalidate();
+                        setVisibility(INVISIBLE);
+                        altView.setVisibility(VISIBLE);
                         altView.setAdapter(new TextRecyclerViewAdapter((List<String>) result));
                         altView.requestLayout();
                     }
                 });
-            } else {
-                canvas = solutionRenderer.getCanvas();
+            } else if (renderer.supportsCanvas()) {
                 renderResult(canvas, result, renderer, solutionRenderer);
             }
 
@@ -190,7 +218,7 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
         }
         finally {
             //System.out.println("Tearing down surface");
-            if (!(renderer instanceof StringListRenderer)) {
+            if (renderer.supportsCanvas() || solutionRenderer.supportsCanvas()) {
                 holder.unlockCanvasAndPost(canvas);
             }
             rendererListener.onRenderDone();
@@ -218,8 +246,12 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
 
     private void renderResult(Canvas c, Object result, IRenderer renderer, IRenderer solutionRenderer) {
         // TODO: Find way to avoid rerendering here.
-        renderer.render();
-        solutionRenderer.render();
+        if (renderer.supportsCanvas()) {
+            renderer.render();
+        }
+        if (solutionRenderer.supportsCanvas()) {
+            solutionRenderer.render();
+        }
         if (result instanceof String) {
             String s = (String)result;
             Paint p = new Paint();

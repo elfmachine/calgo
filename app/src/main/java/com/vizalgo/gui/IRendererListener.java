@@ -7,5 +7,7 @@ public interface IRendererListener {
     void onProgress(int progress);
     void onGenerateStart();
     void onRenderStart();
+
+    void onRenderError(String error);
     void onRenderDone();
 }
