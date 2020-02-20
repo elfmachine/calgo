@@ -1,17 +1,18 @@
 package com.vizalgo.domain;
 
-import java.util.ArrayList;
-
-import com.vizalgo.primitives.*;
+import com.vizalgo.primitives.IGenerator;
+import com.vizalgo.primitives.IProgressListener;
 import com.vizalgo.rendering.IRenderer;
+
+import java.util.List;
 
 /**
  * Created by garret on 12/11/15.
  */
 public interface IProblem {
     String getName();
-    // TODO: Uhh.. make list, not ArrayList?
-    ArrayList<ISolution> getSolutions(IProgressListener listener);
+
+    List<ISolution> getSolutions(IProgressListener listener);
     void setRenderer(IRenderer renderer);
     void setDataModel(Object dataModel);
     Object getDefaultDataModel();

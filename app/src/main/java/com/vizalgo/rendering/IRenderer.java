@@ -11,8 +11,6 @@ public interface IRenderer {
     void setCanvas(Canvas c);
     void setHolder(SurfaceHolder s);
     IRenderer getBaseRenderer();
-
     boolean supportsCanvas();
-
     boolean supportsRecyclerView();
 }

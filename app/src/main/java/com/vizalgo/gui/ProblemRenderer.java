@@ -137,7 +137,7 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
                 renderer.setCanvas(canvas);
                 renderer.setHolder(holder);
             }
-
+            // TODO: Replace with DataModel
             if (renderer instanceof AdjacencyList2DGraphRenderer) {
                 AdjacencyList2DGraphRenderer adjacencyList2DGraphRenderer = (AdjacencyList2DGraphRenderer) renderer;
                 AdjacencyList2DGraphRenderer adjacencyList2DGraphSolutionRenderer = null;
@@ -213,11 +213,11 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
             }
         }
         catch (Exception ex) {
+            rendererListener.onRenderError(ex.getLocalizedMessage());
             System.out.println("ERROR: Unhandled exception during problem run: " + ex);
             ex.printStackTrace();
         }
         finally {
-            //System.out.println("Tearing down surface");
             if (renderer.supportsCanvas() || solutionRenderer.supportsCanvas()) {
                 holder.unlockCanvasAndPost(canvas);
             }

@@ -1,12 +1,16 @@
 package com.vizalgo.domain.problems;
 
-import java.util.ArrayList;
-
-import com.vizalgo.domain.*;
-import com.vizalgo.primitives.*;
-import com.vizalgo.rendering.*;
-
+import com.vizalgo.domain.IProblem;
+import com.vizalgo.domain.ISolution;
 import com.vizalgo.domain.solutions.TarjansAlgorithm;
+import com.vizalgo.primitives.AdjacencyListGenerator2D;
+import com.vizalgo.primitives.IGenerator;
+import com.vizalgo.primitives.IProgressListener;
+import com.vizalgo.rendering.AdjacencyList2DGraphRenderer;
+import com.vizalgo.rendering.IRenderer;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by garret on 12/11/15.
@@ -24,7 +28,6 @@ public class CyclesInADirectedGraph implements IProblem {
 
     @Override
     public void setRenderer(IRenderer renderer) {
-        // TODO: Check type of renderer and throw different exception if not correct
         this.renderer = (AdjacencyList2DGraphRenderer)renderer;
     }
 
@@ -49,7 +52,7 @@ public class CyclesInADirectedGraph implements IProblem {
     }
 
     @Override
-    public ArrayList<ISolution> getSolutions(IProgressListener listener) {
+    public List<ISolution> getSolutions(IProgressListener listener) {
         ArrayList<ISolution> s = new ArrayList<ISolution>();
         s.add(new TarjansAlgorithm());
         return s;

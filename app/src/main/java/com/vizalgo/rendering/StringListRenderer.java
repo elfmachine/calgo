@@ -35,14 +35,8 @@ public class StringListRenderer implements IRenderer {
     public void setCanvas(Canvas c) {
         canvas = c;
     }
-    public Canvas getCanvas() {
-        return canvas;
-    }
     public void setHolder(SurfaceHolder s) {
         this.surfaceHolder = s;
-    }
-    public void setRenderOptions(boolean drawOnNewEdge, boolean drawOnNewNode, boolean drawOnComplete) {
-        // TODO: remove
     }
     public IRenderer getBaseRenderer() {
         return null;

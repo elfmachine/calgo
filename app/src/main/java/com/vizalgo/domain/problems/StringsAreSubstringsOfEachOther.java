@@ -13,6 +13,7 @@ import com.vizalgo.rendering.IRenderer;
 import com.vizalgo.rendering.StringListRenderer;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class StringsAreSubstringsOfEachOther implements IProblem {
     private static final int DEFAULT_NUMBER_OF_STRINGS = 1000;
@@ -30,7 +31,7 @@ public class StringsAreSubstringsOfEachOther implements IProblem {
     }
 
     @Override
-    public ArrayList<ISolution> getSolutions(IProgressListener listener) {
+    public List<ISolution> getSolutions(IProgressListener listener) {
         ArrayList<ISolution> s = new ArrayList<ISolution>();
         s.add(new GarretsNaiveSubStringSolution());
         s.add(new GarretsSmartSubStringSolution());
