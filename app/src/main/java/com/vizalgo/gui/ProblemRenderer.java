@@ -3,7 +3,9 @@ package com.vizalgo.gui;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -131,6 +133,10 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
             problem.setRenderer(renderer);
             generator = problem.getGenerator(this);
             if (canvas != null) {
+                // Fill canvas
+                Paint p = new Paint();
+                p.setColor(Color.BLACK);
+                canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), p);
                 generator.setCoordinates(0, 0, canvas.getWidth(), canvas.getHeight());
             }
             if (renderer.supportsCanvas()) {
@@ -195,10 +201,9 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
                 post(new Runnable() {
                     public void run() {
                         if (renderer.supportsCanvas()) {
-                            //setBackgroundColor(0xf0f0f0f0);
+                            setBackgroundColor(0x80000000);
+                            holder.setFormat(PixelFormat.TRANSPARENT);
                         }
-                        //invalidate();
-                        setVisibility(INVISIBLE);
                         altView.setVisibility(VISIBLE);
                         altView.setAdapter(new TextRecyclerViewAdapter((List<String>) result));
                         altView.requestLayout();

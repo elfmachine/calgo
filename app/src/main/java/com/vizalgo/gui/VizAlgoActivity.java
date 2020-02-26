@@ -181,16 +181,18 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
         }
 
         setupSpinner("problem", problemNames, R.id.problem_spinner);
-
         setupSpinners();
 
         // Set up render view.
         LinearLayout rootLayout = (LinearLayout)findViewById(R.id.vizalgo_root_view);
         FrameLayout renderLayout = new FrameLayout(this);
-        renderLayout.setLayoutParams(new FrameLayout.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.MATCH_PARENT));
+        renderLayout.setLayoutParams(new FrameLayout.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT,
+                RecyclerView.LayoutParams.MATCH_PARENT));
         recyclerView = new RecyclerView(this);
-        recyclerView.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.MATCH_PARENT));
+        recyclerView.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT,
+                RecyclerView.LayoutParams.MATCH_PARENT));
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
         problemRenderer = new ProblemRenderer(this, currentProblem, currentSolution, this, recyclerView);
         renderLayout.addView(problemRenderer);
         renderLayout.addView(recyclerView);
@@ -216,6 +218,9 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
             setPrefInt("problem", pos);
             setupSpinners();
             problemRenderer.updateProblem(currentProblem);
+            problemRenderer.updateSolution(currentSolution);
+            problemRenderer.updateGeneratorMethod(
+                    sharedPref.getInt(getSpinnerName("generator"), 0));
         }
         if (parent.getId() == R.id.generator_spinner) {
             setPrefInt(getSpinnerName("generator"), pos);
@@ -258,6 +263,7 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
             solutionNames.add(((Iterator<ISolution>) it).next().getName());
         }
 
+        currentSolution = solutions.get(sharedPref.getInt(getSpinnerName("solution"), 0));
         setupSpinner(getSpinnerName("solution"), solutionNames, R.id.solution_spinner);
 
         // TODO: This is ugly.  Have a class with generator meta info.
@@ -266,11 +272,7 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
         for (int i = 0; i < generators.size(); i++) {
             names.add(generators.get(i));
         }
-
         setupSpinner(getSpinnerName("generator"), names, R.id.generator_spinner);
-
-        // TODO: Save and read selected solution from storage
-        currentSolution = solutions.get(0);
     }
 
     private void setupSpinner(String pref, List<String> strings, int id) {
