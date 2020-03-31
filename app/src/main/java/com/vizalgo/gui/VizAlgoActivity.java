@@ -2,7 +2,6 @@ package com.vizalgo.gui;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.PixelFormat;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -34,9 +33,6 @@ import java.util.Dictionary;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-
-import static android.view.View.INVISIBLE;
-import static android.view.View.VISIBLE;
 
 public class VizAlgoActivity extends AppCompatActivity implements IRendererListener,
         AdapterView.OnItemSelectedListener {
@@ -96,11 +92,6 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
             et = (EditText) findViewById(R.id.number_edges);
             algdm.Edges = Integer.valueOf(et.getText().toString());
         }
-
-        problemRenderer.setVisibility(VISIBLE);
-        recyclerView.setVisibility(INVISIBLE);
-        problemRenderer.setZOrderOnTop(true);
-        problemRenderer.getHolder().setFormat(PixelFormat.TRANSLUCENT);
 
         currentProblem.setDataModel(dataModel);
 

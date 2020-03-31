@@ -56,10 +56,30 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
         this.solution = solution;
         this.rendererListener = listener;
         this.altView = altView;
+        initViews();
     }
 
     public void updateProblem(IProblem problem) {
         this.problem = problem;
+        initViews();
+    }
+
+    private void initViews() {
+        altView.setVisibility(INVISIBLE);
+        setVisibility(VISIBLE);
+        setZOrderOnTop(true);
+        // Uhhh.. fix this.
+        if (solution.getRenderer(new Paint()).supportsRecyclerView()) {
+            holder.setFormat(PixelFormat.TRANSLUCENT);
+        }
+        // Fill canvas
+        Paint p = new Paint();
+        p.setColor(Color.BLACK);
+        Canvas canvas = holder.lockCanvas(null);
+        if (canvas != null) {
+            canvas.drawColor(Color.rgb(0, 0, 0));
+            holder.unlockCanvasAndPost(canvas);
+        }
     }
 
     public void updateGeneratorMethod(int method) {
@@ -124,6 +144,7 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
         IRenderer solutionRenderer = solution.getSolutionRenderer(new Paint());
         if (renderer.supportsCanvas() || solutionRenderer.supportsCanvas()) {
             canvas = holder.lockCanvas(null);
+            canvas.drawColor(Color.rgb(0, 0, 0));
         } else {
             canvas = null;
         }
@@ -134,9 +155,6 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
             generator = problem.getGenerator(this);
             if (canvas != null) {
                 // Fill canvas
-                Paint p = new Paint();
-                p.setColor(Color.BLACK);
-                canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), p);
                 generator.setCoordinates(0, 0, canvas.getWidth(), canvas.getHeight());
             }
             if (renderer.supportsCanvas()) {
@@ -206,7 +224,6 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
                         }
                         altView.setVisibility(VISIBLE);
                         altView.setAdapter(new TextRecyclerViewAdapter((List<String>) result));
-                        altView.requestLayout();
                     }
                 });
             } else if (renderer.supportsCanvas()) {

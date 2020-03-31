@@ -62,13 +62,7 @@ public class AdjacencyList2DGraphRenderer implements
 
     @Override
     public void render() {
-
         //System.out.println("Rendering a graph with " + graph.getAllNodes().size() + "nodes");
-
-        if (baseRenderer == null) {
-            canvas.drawColor(0xff000000);
-        }
-
         for (Iterator it = graph.getAllNodes().entrySet().iterator();
              it.hasNext(); ) {
             AdjacencyListNode2D node = (AdjacencyListNode2D)((HashMap.Entry)it.next()).getValue();
@@ -138,20 +132,13 @@ public class AdjacencyList2DGraphRenderer implements
     }
 
     private void drawGraph() {
-        //System.out.println("Lock canvas");
-        //Canvas c = holder.lockCanvas(null);
         try {
-            surfaceHolder.unlockCanvasAndPost(canvas);
-            canvas = surfaceHolder.lockCanvas();
-
             // Render base graph or clear the canvas prior to each draw iteration
             if (baseRenderer != null) {
-                //System.out.println("Rendering base");
                 baseRenderer.setCanvas(canvas);
                 baseRenderer.render();
             }
             else {
-                //System.out.println("Clearing screen");
                 canvas.drawColor(Color.rgb(0, 0, 0));
             }
             render();
@@ -162,9 +149,6 @@ public class AdjacencyList2DGraphRenderer implements
             System.out.println("Got exception in drawGraph(): " + ex);
         }
         finally {
-            //System.out.println("Unlock canvas");
-            //if (holder.getSurface() != null && holder.getSurface().isValid())
-              //  holder.unlockCanvasAndPost(c);
         }
     }
 
