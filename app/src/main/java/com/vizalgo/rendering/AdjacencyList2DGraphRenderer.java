@@ -33,7 +33,6 @@ public class AdjacencyList2DGraphRenderer implements
     private boolean drawOnNewEdge = true;
     private boolean drawOnComplete = true;
 
-    private Canvas canvas;
     private SurfaceHolder surfaceHolder;
 
     public AdjacencyList2DGraphRenderer(Paint p, IRenderer baseRenderer) {
@@ -42,18 +41,12 @@ public class AdjacencyList2DGraphRenderer implements
     }
 
     @Override
-    public void setCanvas(Canvas c) {
-        canvas = c;
-    }
-
-
-    @Override
     public void setHolder(SurfaceHolder s) {
         surfaceHolder = s;
     }
 
     @Override
-    public void render() {
+    public void render(Canvas canvas) {
         //System.out.println("Rendering a graph with " + graph.getAllNodes().size() + "nodes");
         for (Iterator it = graph.getAllNodes().entrySet().iterator();
              it.hasNext(); ) {
@@ -125,17 +118,16 @@ public class AdjacencyList2DGraphRenderer implements
 
     private void drawGraph() {
         try {
+            Canvas canvas = surfaceHolder.lockCanvas();
             // Render base graph or clear the canvas prior to each draw iteration
             if (baseRenderer != null) {
-                baseRenderer.setCanvas(canvas);
-                baseRenderer.render();
+                baseRenderer.render(canvas);
             }
             else {
                 canvas.drawColor(Color.rgb(0, 0, 0));
             }
-            render();
+            render(canvas);
             surfaceHolder.unlockCanvasAndPost(canvas);
-            canvas = surfaceHolder.lockCanvas();
         }
         catch (Exception ex) {
             System.out.println("Got exception in drawGraph(): " + ex);

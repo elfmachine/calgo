@@ -11,11 +11,11 @@ import java.util.Collection;
 
 public class StringListRenderer implements IRenderer {
     private SurfaceHolder surfaceHolder;
-    private Canvas canvas;
     private Collection<String> stringList;
     private int left, right;
 
-    public void render() {
+    public void render(Canvas canvas) {
+        // TODO: Figure out what to do with this.
         if (canvas == null) {
             return;
         }
@@ -32,9 +32,6 @@ public class StringListRenderer implements IRenderer {
             y += bounds.bottom;
         }
     }
-    public void setCanvas(Canvas c) {
-        canvas = c;
-    }
     public void setHolder(SurfaceHolder s) {
         this.surfaceHolder = s;
     }
@@ -44,7 +41,7 @@ public class StringListRenderer implements IRenderer {
 
     @Override
     public boolean supportsCanvas() {
-        return true;
+        return false;
     }
 
     @Override

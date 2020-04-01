@@ -108,16 +108,6 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
             }
         }
 
-        // TODO: Interpret data model and update accordingly rather than hardcoding to specific
-        // data model
-        /*if (dataModel instanceof AdjacencyListGraphDataModel) {
-            AdjacencyListGraphDataModel algdm = (AdjacencyListGraphDataModel) dataModel;
-            EditText et = (EditText) findViewById(R.id.number_nodes);
-            algdm.Nodes = Integer.valueOf(et.getText().toString());
-            et = (EditText) findViewById(R.id.number_edges);
-            algdm.Edges = Integer.valueOf(et.getText().toString());
-        }*/
-
         currentProblem.setDataModel(dataModel);
 
         if (runThread == null) {
@@ -193,8 +183,6 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
         }
 
         setupSpinner("problem", problemNames, R.id.problem_spinner);
-
-        // TODO: Get rid of second call to this after item is selected in spinner.
         setupSpinners();
 
         // Set up render view.
@@ -254,11 +242,7 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
     }
 
     private void setupSpinners() {
-        // TODO: Save and read from storage
         currentProblem = problems.get(sharedPref.getInt("problem", 0));
-
-        // TODO: Interpret data model and set up GUI accordingly rather than hardcoding to
-        // specific data model and representation
         dataModel = currentProblem.getDefaultDataModel();
 
         LinearLayout layout = (LinearLayout) findViewById(R.id.graphOptions);

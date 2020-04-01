@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -23,6 +24,7 @@ import com.vizalgo.primitives.IProgressListener;
 import com.vizalgo.rendering.AdjacencyList2DGraphRenderer;
 import com.vizalgo.rendering.IRenderer;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -35,14 +37,11 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
     private int generatorMethod;
 
     private IProblem problem;
-
     private ISolution solution;
-
     private IRendererListener rendererListener;
+    private IGenerator generator;
 
     private Context context;
-
-    private IGenerator generator;
 
     private RecyclerView altView;
 
@@ -56,7 +55,6 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
         this.solution = solution;
         this.rendererListener = listener;
         this.altView = altView;
-        initViews();
     }
 
     public void updateProblem(IProblem problem) {
@@ -65,20 +63,23 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
     }
 
     private void initViews() {
-        altView.setVisibility(INVISIBLE);
         setVisibility(VISIBLE);
+        altView.setVisibility(VISIBLE);
         setZOrderOnTop(true);
         // TODO: Uhhh.. fix this.
-        if (solution.getRenderer(new Paint()).supportsRecyclerView()) {
-            holder.setFormat(PixelFormat.TRANSLUCENT);
-        }
-        // Fill canvas
-        Paint p = new Paint();
-        p.setColor(Color.BLACK);
-        Canvas canvas = holder.lockCanvas(null);
-        if (canvas != null) {
-            canvas.drawColor(Color.rgb(0, 0, 0));
-            holder.unlockCanvasAndPost(canvas);
+        IRenderer tempSolutionRenderer = solution.getRenderer(new Paint());
+        if (tempSolutionRenderer.supportsRecyclerView()) {
+            altView.setAdapter(new TextRecyclerViewAdapter(new ArrayList<String>()));
+            holder.setFormat(PixelFormat.TRANSPARENT);
+            setBackgroundColor(Color.TRANSPARENT);
+        } else {
+            // Clear canvas
+            Canvas canvas = holder.lockCanvas(null);
+            if (canvas != null) {
+                canvas.drawColor(0, PorterDuff.Mode.CLEAR);
+                canvas.drawColor(Color.argb(0, 0, 0, 0));
+                holder.unlockCanvasAndPost(canvas);
+            }
         }
     }
 
@@ -132,33 +133,24 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
     @Override
     public void run() {
         System.out.println("Start render run");
-        // Test
-        final Canvas canvas;
         final IRenderer renderer = solution.getRenderer(new Paint());
         SharedPreferences sharedPref = context.getSharedPreferences(
                 context.getString(R.string.preference_file_key), Context.MODE_PRIVATE);
 
         int renderOption = sharedPref.getInt("renderOption", -1);
-
-        System.out.println("ProblemRenderer: Render option is " + renderOption);
         IRenderer solutionRenderer = solution.getSolutionRenderer(new Paint());
-        if (renderer.supportsCanvas() || solutionRenderer.supportsCanvas()) {
-            canvas = holder.lockCanvas(null);
-            canvas.drawColor(Color.rgb(0, 0, 0));
-        } else {
-            canvas = null;
-        }
+        Canvas canvas = null;
         try
         {
             // Run the problem
             problem.setRenderer(renderer);
             generator = problem.getGenerator(this);
-            if (canvas != null) {
-                // Fill canvas
-                generator.setCoordinates(0, 0, canvas.getWidth(), canvas.getHeight());
-            }
             if (renderer.supportsCanvas()) {
-                renderer.setCanvas(canvas);
+                canvas = holder.lockCanvas(null);
+                // TODO: Fix this crap
+                generator.setCoordinates(0, 0, canvas.getWidth(), canvas.getHeight());
+                holder.unlockCanvasAndPost(canvas);
+                canvas = null;
                 renderer.setHolder(holder);
             }
             // TODO: Replace with DataModel
@@ -206,7 +198,6 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
                 return;
             }
             if (solutionRenderer.supportsCanvas()) {
-                solutionRenderer.setCanvas(canvas);
                 solutionRenderer.setHolder(holder);
             }
             rendererListener.onProgress(0);
@@ -218,16 +209,14 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
             if (renderer.supportsRecyclerView()) {
                 post(new Runnable() {
                     public void run() {
-                        if (renderer.supportsCanvas()) {
-                            setBackgroundColor(0x80000000);
-                            holder.setFormat(PixelFormat.TRANSPARENT);
-                        }
-                        altView.setVisibility(VISIBLE);
                         altView.setAdapter(new TextRecyclerViewAdapter((List<String>) result));
                     }
                 });
             } else if (renderer.supportsCanvas()) {
+                canvas = holder.lockCanvas(null);
                 renderResult(canvas, result, renderer, solutionRenderer);
+                holder.unlockCanvasAndPost(canvas);
+                canvas = null;
             }
 
             if (!Thread.currentThread().isInterrupted()) {
@@ -240,7 +229,7 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
             ex.printStackTrace();
         }
         finally {
-            if (renderer.supportsCanvas() || solutionRenderer.supportsCanvas()) {
+            if (canvas != null) {
                 holder.unlockCanvasAndPost(canvas);
             }
             rendererListener.onRenderDone();
@@ -269,10 +258,10 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
     private void renderResult(Canvas c, Object result, IRenderer renderer, IRenderer solutionRenderer) {
         // TODO: Find way to avoid rerendering here.
         if (renderer.supportsCanvas()) {
-            renderer.render();
+            renderer.render(c);
         }
         if (solutionRenderer.supportsCanvas()) {
-            solutionRenderer.render();
+            solutionRenderer.render(c);
         }
         if (result instanceof String) {
             String s = (String)result;
