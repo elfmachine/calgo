@@ -26,8 +26,8 @@ import com.garretware.graphtestapp.R;
 import com.vizalgo.domain.IProblem;
 import com.vizalgo.domain.ISolution;
 import com.vizalgo.domain.ProblemFactory;
-import com.vizalgo.domain.problems.AdjacencyListGraphDataModel;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Iterator;
@@ -36,32 +36,28 @@ import java.util.List;
 
 public class VizAlgoActivity extends AppCompatActivity implements IRendererListener,
         AdapterView.OnItemSelectedListener {
+    private final static int SHOW_MESSAGE = 1;
+
     private ArrayList<IProblem> problems = ProblemFactory.getProblemSet(this);
+    private List<ISolution> solutions;
 
     private IProblem currentProblem;
-
     private ISolution currentSolution;
 
     private ProblemRenderer problemRenderer;
     private RecyclerView recyclerView;
 
     private Thread runThread;
+    private Handler messageHandler;
 
     private ProgressBar progressBar;
 
     private int renderOption;
-
     private boolean cancelled;
-
-    private Handler messageHandler;
 
     private Object dataModel;
 
-    private List<ISolution> solutions;
-
     private boolean renderError;
-
-    private final static int SHOW_MESSAGE = 1;
 
     private SharedPreferences sharedPref;
 
@@ -83,15 +79,44 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
 
     public void startSolver(View view) {
         renderError = false;
+
+        LinearLayout layout = (LinearLayout) findViewById(R.id.graphOptions);
+        int index = 1;
+        for (Field f : dataModel.getClass().getFields()) {
+            // Find the corresponding EditText.  Note that this assumes the field order is
+            // preserved.
+            // TODO: Create masked sequential id based on ordering of field in class.
+            EditText editText = (EditText) layout.getChildAt(index);
+            index += 2;
+            String textValue = editText.getText().toString();
+
+            try {
+                if (f.getType() == int.class || f.getType() == Integer.class) {
+                    f.set(dataModel, Integer.valueOf(textValue));
+                } else if (f.getType() == String.class) {
+                    f.set(dataModel, textValue);
+                } else {
+                    System.out.println(
+                            String.format(
+                                    "WARNING: Don't know what to do with field of type %s for %s",
+                                    f.getType(), f.getName()));
+                }
+            } catch (IllegalAccessException e) {
+                System.out.println(
+                        String.format("IllegalAccessException reading view for: %s\n%s"
+                                + f.getName(), e));
+            }
+        }
+
         // TODO: Interpret data model and update accordingly rather than hardcoding to specific
         // data model
-        if (dataModel instanceof AdjacencyListGraphDataModel) {
+        /*if (dataModel instanceof AdjacencyListGraphDataModel) {
             AdjacencyListGraphDataModel algdm = (AdjacencyListGraphDataModel) dataModel;
             EditText et = (EditText) findViewById(R.id.number_nodes);
             algdm.Nodes = Integer.valueOf(et.getText().toString());
             et = (EditText) findViewById(R.id.number_edges);
             algdm.Edges = Integer.valueOf(et.getText().toString());
-        }
+        }*/
 
         currentProblem.setDataModel(dataModel);
 
@@ -116,9 +141,6 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
         getMenuInflater().inflate(R.menu.menu_graph, menu);
 
         renderOption = sharedPref.getInt("renderOption", -1);
-
-        System.out.println("Render option is " + renderOption);
-
         if (renderOption != -1 && menu.findItem(renderOption) != null) {
             menu.findItem(renderOption).setChecked(true);
         }
@@ -133,7 +155,6 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        System.out.println("onOptionsItemSelected " + id);
         if (item.isCheckable()) {
             item.setChecked(true);
             setPrefInt("renderOption", id);
@@ -172,6 +193,8 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
         }
 
         setupSpinner("problem", problemNames, R.id.problem_spinner);
+
+        // TODO: Get rid of second call to this after item is selected in spinner.
         setupSpinners();
 
         // Set up render view.
@@ -232,20 +255,40 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
 
     private void setupSpinners() {
         // TODO: Save and read from storage
-        // TODO: Create problem selector
         currentProblem = problems.get(sharedPref.getInt("problem", 0));
 
         // TODO: Interpret data model and set up GUI accordingly rather than hardcoding to
         // specific data model and representation
         dataModel = currentProblem.getDefaultDataModel();
 
-        if (dataModel instanceof AdjacencyListGraphDataModel) {
+        LinearLayout layout = (LinearLayout) findViewById(R.id.graphOptions);
+        layout.removeAllViews();
+        for (Field f : dataModel.getClass().getFields()) {
+            // Add TextView which describes the object.
+            TextView textView = new TextView(this);
+            textView.setText(f.getName());
+            //textView.setLayoutParams(TextView.LayoutParams.WRAP_CONTENT);
+            layout.addView(textView);
+
+            // Add EditText to edit the object.
+            EditText editText = new EditText(this);
+            try {
+                editText.setText(f.get(dataModel).toString());
+            } catch (IllegalAccessException e) {
+                System.out.println(
+                        String.format("IllegalAccessException constructing view for: %s\n%s"
+                                + f.getName(), e));
+            }
+            layout.addView(editText);
+        }
+
+        /*if (dataModel instanceof AdjacencyListGraphDataModel) {
             AdjacencyListGraphDataModel algdm = (AdjacencyListGraphDataModel) dataModel;
             EditText et = (EditText) findViewById(R.id.number_nodes);
             et.setText(new Integer(algdm.Nodes).toString());
             et = (EditText) findViewById(R.id.number_edges);
             et.setText(new Integer(algdm.Edges).toString());
-        }
+        }*/
 
         solutions = currentProblem.getSolutions(problemRenderer);
         List<String> solutionNames = new LinkedList<>();

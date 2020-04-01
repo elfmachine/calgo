@@ -68,7 +68,7 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
         altView.setVisibility(INVISIBLE);
         setVisibility(VISIBLE);
         setZOrderOnTop(true);
-        // Uhhh.. fix this.
+        // TODO: Uhhh.. fix this.
         if (solution.getRenderer(new Paint()).supportsRecyclerView()) {
             holder.setFormat(PixelFormat.TRANSLUCENT);
         }

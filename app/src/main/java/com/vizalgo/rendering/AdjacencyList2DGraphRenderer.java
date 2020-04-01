@@ -21,27 +21,19 @@ import java.util.Iterator;
 public class AdjacencyList2DGraphRenderer implements
         IAdjacencyListChangeListener<AdjacencyListNode2D>, IRenderer {
     public int EdgeThickness = 3;
-
     public int PointRadius = 3;
-
     public int ArrowAngle = 25;
-
     public int ArrowLength = 20;
 
     private Paint paint;
-
     private AdjacencyListGraph<AdjacencyListNode2D> graph;
-
     private IRenderer baseRenderer;
 
     private boolean drawOnNewNode = true;
-
     private boolean drawOnNewEdge = true;
-
     private boolean drawOnComplete = true;
 
     private Canvas canvas;
-
     private SurfaceHolder surfaceHolder;
 
     public AdjacencyList2DGraphRenderer(Paint p, IRenderer baseRenderer) {
