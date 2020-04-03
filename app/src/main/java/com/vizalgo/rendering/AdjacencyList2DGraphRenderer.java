@@ -3,7 +3,7 @@ package com.vizalgo.rendering;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.view.SurfaceHolder;
+import android.view.TextureView;
 
 import com.vizalgo.primitives.AdjacencyListEdge2D;
 import com.vizalgo.primitives.AdjacencyListGraph;
@@ -33,7 +33,7 @@ public class AdjacencyList2DGraphRenderer implements
     private boolean drawOnNewEdge = true;
     private boolean drawOnComplete = true;
 
-    private SurfaceHolder surfaceHolder;
+    private TextureView textureView;
 
     public AdjacencyList2DGraphRenderer(Paint p, IRenderer baseRenderer) {
         paint = p;
@@ -41,8 +41,8 @@ public class AdjacencyList2DGraphRenderer implements
     }
 
     @Override
-    public void setHolder(SurfaceHolder s) {
-        surfaceHolder = s;
+    public void setTextureView(TextureView t) {
+        textureView = t;
     }
 
     @Override
@@ -118,7 +118,7 @@ public class AdjacencyList2DGraphRenderer implements
 
     private void drawGraph() {
         try {
-            Canvas canvas = surfaceHolder.lockCanvas();
+            Canvas canvas = textureView.lockCanvas();
             // Render base graph or clear the canvas prior to each draw iteration
             if (baseRenderer != null) {
                 baseRenderer.render(canvas);
@@ -127,7 +127,7 @@ public class AdjacencyList2DGraphRenderer implements
                 canvas.drawColor(Color.rgb(0, 0, 0));
             }
             render(canvas);
-            surfaceHolder.unlockCanvasAndPost(canvas);
+            textureView.unlockCanvasAndPost(canvas);
         }
         catch (Exception ex) {
             System.out.println("Got exception in drawGraph(): " + ex);

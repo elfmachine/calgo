@@ -5,13 +5,10 @@ import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.PixelFormat;
-import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
+import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -30,9 +27,8 @@ import java.util.List;
 /**
  * Created by garret on 12/11/15.
  */
-public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callback,
+public class ProblemRenderer extends TextureView implements
         Runnable, IProgressListener {
-    private SurfaceHolder holder;
 
     private int generatorMethod;
 
@@ -49,8 +45,6 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
                            IRendererListener listener, RecyclerView altView) {
         super(context);
         this.context = context;
-        holder = getHolder();
-        holder.addCallback(this);
         this.problem = problem;
         this.solution = solution;
         this.rendererListener = listener;
@@ -59,28 +53,6 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
 
     public void updateProblem(IProblem problem) {
         this.problem = problem;
-        initViews();
-    }
-
-    private void initViews() {
-        setVisibility(VISIBLE);
-        altView.setVisibility(VISIBLE);
-        setZOrderOnTop(true);
-        // TODO: Uhhh.. fix this.
-        IRenderer tempSolutionRenderer = solution.getRenderer(new Paint());
-        if (tempSolutionRenderer.supportsRecyclerView()) {
-            altView.setAdapter(new TextRecyclerViewAdapter(new ArrayList<String>()));
-            holder.setFormat(PixelFormat.TRANSPARENT);
-            setBackgroundColor(Color.TRANSPARENT);
-        } else {
-            // Clear canvas
-            Canvas canvas = holder.lockCanvas(null);
-            if (canvas != null) {
-                canvas.drawColor(0, PorterDuff.Mode.CLEAR);
-                canvas.drawColor(Color.argb(0, 0, 0, 0));
-                holder.unlockCanvasAndPost(canvas);
-            }
-        }
     }
 
     public void updateGeneratorMethod(int method) {
@@ -91,17 +63,34 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
         this.solution = solution;
     }
 
-    @Override
-    public void surfaceCreated(SurfaceHolder holder) {
-        this.holder = holder;
-    }
-
     private class TextViewHolder extends RecyclerView.ViewHolder {
         public TextView mTextView;
 
         public TextViewHolder(View itemView) {
             super(itemView);
             mTextView = (TextView) itemView;
+        }
+    }
+
+    public void initViews() {
+        setVisibility(VISIBLE);
+        // TODO: Uhhh.. fix this.
+        IRenderer tempSolutionRenderer = solution.getRenderer(new Paint());
+        if (tempSolutionRenderer.supportsRecyclerView()) {
+            altView.setAdapter(new TextRecyclerViewAdapter(new ArrayList<String>()));
+            setOpaque(false);
+            setAlpha(0.5f);
+            altView.setVisibility(VISIBLE);
+        } else {
+            setOpaque(true);
+            setAlpha(1.0f);
+            altView.setVisibility(INVISIBLE);
+        }
+        // Clear canvas
+        Canvas canvas = lockCanvas();
+        if (canvas != null) {
+            canvas.drawColor(Color.rgb(0, 0, 0));
+            unlockCanvasAndPost(canvas);
         }
     }
 
@@ -146,12 +135,13 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
             problem.setRenderer(renderer);
             generator = problem.getGenerator(this);
             if (renderer.supportsCanvas()) {
-                canvas = holder.lockCanvas(null);
-                // TODO: Fix this crap
+                canvas = lockCanvas();
+                // TODO: Get this from view itself, not canvas.
+                canvas.drawColor(Color.rgb(0, 0, 0));
                 generator.setCoordinates(0, 0, canvas.getWidth(), canvas.getHeight());
-                holder.unlockCanvasAndPost(canvas);
+                unlockCanvasAndPost(canvas);
                 canvas = null;
-                renderer.setHolder(holder);
+                renderer.setTextureView(this);
             }
             // TODO: Replace with DataModel
             if (renderer instanceof AdjacencyList2DGraphRenderer) {
@@ -198,7 +188,7 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
                 return;
             }
             if (solutionRenderer.supportsCanvas()) {
-                solutionRenderer.setHolder(holder);
+                solutionRenderer.setTextureView(this);
             }
             rendererListener.onProgress(0);
             rendererListener.onRenderStart();
@@ -206,16 +196,17 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
             final Object result = solution.solve(problemRepresentation);
             System.out.println(String.format("Finished solve in %dms", System.currentTimeMillis() - time));
 
-            if (renderer.supportsRecyclerView()) {
+            if (solutionRenderer.supportsRecyclerView()) {
                 post(new Runnable() {
                     public void run() {
                         altView.setAdapter(new TextRecyclerViewAdapter((List<String>) result));
                     }
                 });
-            } else if (renderer.supportsCanvas()) {
-                canvas = holder.lockCanvas(null);
+            }
+            if (renderer.supportsCanvas() || solutionRenderer.supportsCanvas()) {
+                canvas = lockCanvas();
                 renderResult(canvas, result, renderer, solutionRenderer);
-                holder.unlockCanvasAndPost(canvas);
+                unlockCanvasAndPost(canvas);
                 canvas = null;
             }
 
@@ -230,24 +221,10 @@ public class ProblemRenderer extends SurfaceView implements SurfaceHolder.Callba
         }
         finally {
             if (canvas != null) {
-                holder.unlockCanvasAndPost(canvas);
+                unlockCanvasAndPost(canvas);
             }
             rendererListener.onRenderDone();
         }
-    }
-
-    @Override
-    // This is always called at least once, after surfaceCreated
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-    }
-
-    @Override
-    public void surfaceDestroyed(SurfaceHolder holder) {
-    }
-
-    @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
     }
 
     @Override

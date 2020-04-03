@@ -183,7 +183,7 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
         }
 
         setupSpinner("problem", problemNames, R.id.problem_spinner);
-        setupSpinners();
+        initProblem();
 
         // Set up render view.
         LinearLayout rootLayout = (LinearLayout)findViewById(R.id.vizalgo_root_view);
@@ -218,11 +218,12 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
         System.out.println("onItemSelected " + pos + "," + id + "on adapter " + parent.getId());
         if (parent.getId() == R.id.problem_spinner) {
             setPrefInt("problem", pos);
-            setupSpinners();
+            initProblem();
             problemRenderer.updateProblem(currentProblem);
             problemRenderer.updateSolution(currentSolution);
             problemRenderer.updateGeneratorMethod(
                     sharedPref.getInt(getSpinnerName("generator"), 0));
+            problemRenderer.initViews();
         }
         if (parent.getId() == R.id.generator_spinner) {
             setPrefInt(getSpinnerName("generator"), pos);
@@ -241,17 +242,18 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
         // Another interface callback
     }
 
-    private void setupSpinners() {
+    private void initProblem() {
         currentProblem = problems.get(sharedPref.getInt("problem", 0));
         dataModel = currentProblem.getDefaultDataModel();
 
         LinearLayout layout = (LinearLayout) findViewById(R.id.graphOptions);
+        layout.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
         layout.removeAllViews();
         for (Field f : dataModel.getClass().getFields()) {
             // Add TextView which describes the object.
             TextView textView = new TextView(this);
             textView.setText(f.getName());
-            //textView.setLayoutParams(TextView.LayoutParams.WRAP_CONTENT);
             layout.addView(textView);
 
             // Add EditText to edit the object.
@@ -265,14 +267,6 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
             }
             layout.addView(editText);
         }
-
-        /*if (dataModel instanceof AdjacencyListGraphDataModel) {
-            AdjacencyListGraphDataModel algdm = (AdjacencyListGraphDataModel) dataModel;
-            EditText et = (EditText) findViewById(R.id.number_nodes);
-            et.setText(new Integer(algdm.Nodes).toString());
-            et = (EditText) findViewById(R.id.number_edges);
-            et.setText(new Integer(algdm.Edges).toString());
-        }*/
 
         solutions = currentProblem.getSolutions(problemRenderer);
         List<String> solutionNames = new LinkedList<>();

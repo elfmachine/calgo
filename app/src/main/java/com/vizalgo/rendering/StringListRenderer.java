@@ -5,12 +5,12 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
-import android.view.SurfaceHolder;
+import android.view.TextureView;
 
 import java.util.Collection;
 
 public class StringListRenderer implements IRenderer {
-    private SurfaceHolder surfaceHolder;
+    private TextureView textureView;
     private Collection<String> stringList;
     private int left, right;
 
@@ -19,11 +19,12 @@ public class StringListRenderer implements IRenderer {
         if (canvas == null) {
             return;
         }
+        canvas.drawColor(Color.rgb(0, 0, 0));
         int x = left, y = 0;
         Paint p = new Paint();
         Typeface tf = Typeface.create("Arial", Typeface.NORMAL);
         p.setTypeface(tf);
-        p.setColor(Color.WHITE);
+        p.setColor(Color.BLUE);
         p.setTextSize(12);
         Rect bounds = new Rect();
         for (String s : stringList) {
@@ -32,8 +33,9 @@ public class StringListRenderer implements IRenderer {
             y += bounds.bottom;
         }
     }
-    public void setHolder(SurfaceHolder s) {
-        this.surfaceHolder = s;
+
+    public void setTextureView(TextureView tv) {
+        textureView = tv;
     }
     public IRenderer getBaseRenderer() {
         return null;
@@ -41,7 +43,7 @@ public class StringListRenderer implements IRenderer {
 
     @Override
     public boolean supportsCanvas() {
-        return false;
+        return true;
     }
 
     @Override
