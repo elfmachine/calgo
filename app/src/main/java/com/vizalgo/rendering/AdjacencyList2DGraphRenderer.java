@@ -3,6 +3,7 @@ package com.vizalgo.rendering;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.view.TextureView;
 
 import com.vizalgo.primitives.AdjacencyListEdge2D;
@@ -47,7 +48,6 @@ public class AdjacencyList2DGraphRenderer implements
 
     @Override
     public void render(Canvas canvas) {
-        //System.out.println("Rendering a graph with " + graph.getAllNodes().size() + "nodes");
         for (Iterator it = graph.getAllNodes().entrySet().iterator();
              it.hasNext(); ) {
             AdjacencyListNode2D node = (AdjacencyListNode2D)((HashMap.Entry)it.next()).getValue();
@@ -91,34 +91,34 @@ public class AdjacencyList2DGraphRenderer implements
     @Override
     public void onEdgeAdded(IAdjacencyListGraphEdgeType e) {
         if (drawOnNewEdge) {
-            drawGraph();
+            drawGraph(rectFromEdge(e));
         }
     }
 
     @Override
     public void onNodeAdded(IAdjacencyListGraphNodeType n) {
         if (drawOnNewNode) {
-            drawGraph();
+            drawGraph(new Rect(n.getX() - 10, n.getY() - 10, n.getX() + 10, n.getY() + 10));
         }
     }
 
     @Override
     public void onNodeRemoved(IAdjacencyListGraphNodeType n) {
         if (drawOnNewNode) {
-            drawGraph();
+            drawGraph(null);
         }
     }
 
     @Override
     public void onComplete() {
         if (drawOnComplete) {
-            drawGraph();
+            drawGraph(null);
         }
     }
 
-    private void drawGraph() {
+    private void drawGraph(Rect dirty) {
         try {
-            Canvas canvas = textureView.lockCanvas();
+            Canvas canvas = textureView.lockCanvas(dirty);
             // Render base graph or clear the canvas prior to each draw iteration
             if (baseRenderer != null) {
                 baseRenderer.render(canvas);
@@ -162,6 +162,25 @@ public class AdjacencyList2DGraphRenderer implements
         }
 
         canvas.drawLine(start.getX(), start.getY(), end.getX(), end.getY(), paint);
+    }
+
+    private Rect rectFromEdge(IAdjacencyListGraphEdgeType e) {
+        int left, right, top, bottom;
+        if (e.getStartNode().getX() < e.getEndNode().getX()) {
+            left = e.getStartNode().getX();
+            right = e.getEndNode().getX();
+        } else {
+            left = e.getEndNode().getX();
+            right = e.getStartNode().getX();
+        }
+        if (e.getStartNode().getY() < e.getEndNode().getY()) {
+            top = e.getStartNode().getY();
+            bottom = e.getEndNode().getY();
+        } else {
+            top = e.getEndNode().getY();
+            bottom = e.getStartNode().getY();
+        }
+        return new Rect(left, top, right, bottom);
     }
 
 }

@@ -13,6 +13,10 @@ public interface IAdjacencyListGraphNodeType {
     void setIndex(int i);
     void setValue(int v);
 
+    int getX();
+
+    int getY();
+
     IAdjacencyListGraphEdgeType connect(IAdjacencyListGraphNodeType newNode, int color, int weight,
                                         boolean isDirected);
     ArrayList<IAdjacencyListGraphEdgeType> getEdges();

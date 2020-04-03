@@ -36,6 +36,8 @@ public class ProblemRenderer extends TextureView implements
     private ISolution solution;
     private IRendererListener rendererListener;
     private IGenerator generator;
+    private IRenderer problemRenderer;
+    private IRenderer solutionRenderer;
 
     private Context context;
 
@@ -65,7 +67,6 @@ public class ProblemRenderer extends TextureView implements
 
     private class TextViewHolder extends RecyclerView.ViewHolder {
         public TextView mTextView;
-
         public TextViewHolder(View itemView) {
             super(itemView);
             mTextView = (TextView) itemView;
@@ -74,9 +75,10 @@ public class ProblemRenderer extends TextureView implements
 
     public void initViews() {
         setVisibility(VISIBLE);
-        // TODO: Uhhh.. fix this.
-        IRenderer tempSolutionRenderer = solution.getRenderer(new Paint());
-        if (tempSolutionRenderer.supportsRecyclerView()) {
+        problemRenderer = solution.getRenderer(new Paint());
+        solutionRenderer = solution.getSolutionRenderer(new Paint());
+        if (solutionRenderer.supportsRecyclerView()) {
+            // Make TextureView transparent.
             altView.setAdapter(new TextRecyclerViewAdapter(new ArrayList<String>()));
             setOpaque(false);
             setAlpha(0.5f);
@@ -122,30 +124,27 @@ public class ProblemRenderer extends TextureView implements
     @Override
     public void run() {
         System.out.println("Start render run");
-        final IRenderer renderer = solution.getRenderer(new Paint());
         SharedPreferences sharedPref = context.getSharedPreferences(
                 context.getString(R.string.preference_file_key), Context.MODE_PRIVATE);
 
         int renderOption = sharedPref.getInt("renderOption", -1);
-        IRenderer solutionRenderer = solution.getSolutionRenderer(new Paint());
         Canvas canvas = null;
         try
         {
             // Run the problem
-            problem.setRenderer(renderer);
+            problem.setRenderer(problemRenderer);
             generator = problem.getGenerator(this);
-            if (renderer.supportsCanvas()) {
+            if (problemRenderer.supportsCanvas()) {
                 canvas = lockCanvas();
-                // TODO: Get this from view itself, not canvas.
                 canvas.drawColor(Color.rgb(0, 0, 0));
                 generator.setCoordinates(0, 0, canvas.getWidth(), canvas.getHeight());
                 unlockCanvasAndPost(canvas);
                 canvas = null;
-                renderer.setTextureView(this);
+                problemRenderer.setTextureView(this);
             }
-            // TODO: Replace with DataModel
-            if (renderer instanceof AdjacencyList2DGraphRenderer) {
-                AdjacencyList2DGraphRenderer adjacencyList2DGraphRenderer = (AdjacencyList2DGraphRenderer) renderer;
+            // TODO: Move to datamodel, use annotation to denote.
+            if (problemRenderer instanceof AdjacencyList2DGraphRenderer) {
+                AdjacencyList2DGraphRenderer adjacencyList2DGraphRenderer = (AdjacencyList2DGraphRenderer) problemRenderer;
                 AdjacencyList2DGraphRenderer adjacencyList2DGraphSolutionRenderer = null;
                 if (solutionRenderer instanceof AdjacencyList2DGraphRenderer) {
                     adjacencyList2DGraphSolutionRenderer = (AdjacencyList2DGraphRenderer) solutionRenderer;
@@ -203,9 +202,9 @@ public class ProblemRenderer extends TextureView implements
                     }
                 });
             }
-            if (renderer.supportsCanvas() || solutionRenderer.supportsCanvas()) {
+            if (problemRenderer.supportsCanvas() || solutionRenderer.supportsCanvas()) {
                 canvas = lockCanvas();
-                renderResult(canvas, result, renderer, solutionRenderer);
+                renderResult(canvas, result, problemRenderer, solutionRenderer);
                 unlockCanvasAndPost(canvas);
                 canvas = null;
             }

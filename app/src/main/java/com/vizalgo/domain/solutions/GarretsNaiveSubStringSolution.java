@@ -68,16 +68,15 @@ public class GarretsNaiveSubStringSolution implements ISolution {
                 render.add("  " + v);
             }
         }
-        solutionRenderer.setup(render, 100, 200);
         return render;
     }
 
     public IRenderer getRenderer(Paint p) {
-        renderer = new StringListRenderer();
+        renderer = new StringListRenderer(true);
         return renderer;
     }
     public IRenderer getSolutionRenderer(Paint p) {
-        solutionRenderer = new StringListRenderer();
+        solutionRenderer = new StringListRenderer(false);
         return solutionRenderer;
     }
     public void setProgressListener(IProgressListener listener) {

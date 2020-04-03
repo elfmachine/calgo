@@ -13,19 +13,22 @@ public class StringListRenderer implements IRenderer {
     private TextureView textureView;
     private Collection<String> stringList;
     private int left, right;
+    // If this is false, use recycler view
+    private boolean render;
+
+    public StringListRenderer(boolean render) {
+        this.render = render;
+    }
 
     public void render(Canvas canvas) {
-        // TODO: Figure out what to do with this.
-        if (canvas == null) {
-            return;
-        }
+        if (!render) return;
         canvas.drawColor(Color.rgb(0, 0, 0));
         int x = left, y = 0;
         Paint p = new Paint();
         Typeface tf = Typeface.create("Arial", Typeface.NORMAL);
         p.setTypeface(tf);
         p.setColor(Color.BLUE);
-        p.setTextSize(12);
+        p.setTextSize(20);
         Rect bounds = new Rect();
         for (String s : stringList) {
             canvas.drawText(s, x, y, p);
@@ -43,12 +46,12 @@ public class StringListRenderer implements IRenderer {
 
     @Override
     public boolean supportsCanvas() {
-        return true;
+        return render;
     }
 
     @Override
     public boolean supportsRecyclerView() {
-        return true;
+        return !render;
     }
 
     public void setup(Collection<String> stringList, int left, int right) {

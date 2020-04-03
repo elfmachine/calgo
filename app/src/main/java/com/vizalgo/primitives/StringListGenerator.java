@@ -22,12 +22,12 @@ import java.util.Set;
 public class StringListGenerator implements IGenerator {
     public enum SupportedMethods {RANDOM_FROM_FILE, FIRST_N}
 
-    ;
     private Context context;
     private ArrayList<String> dictionary = new ArrayList<String>();
     private Set<String> stringList = new HashSet<String>();
     private StringListDataModel dataModel;
     private StringListRenderer renderer;
+    private int x0, y0, x1, y1;
 
     public StringListGenerator(Context context, StringListDataModel dataModel, StringListRenderer renderer) {
         this.context = context;
@@ -63,21 +63,32 @@ public class StringListGenerator implements IGenerator {
         }
 
         if (method == SupportedMethods.RANDOM_FROM_FILE.ordinal()) {
-
-            for (int i = 0; i < numberOfWords; i++)
-                stringList.add(dictionary.get((int) (Math.random() * dictionary.size()) % dictionary.size()));
-            renderer.setup(stringList, 0, 100);
+            HashSet<Integer> items = new HashSet<>();
+            for (int i = 0; i < numberOfWords; i++) {
+                int n;
+                do {
+                    n = (int) (Math.random() * dictionary.size()) % dictionary.size();
+                } while (items.contains(n));
+                items.add(n);
+                System.out.println(String.format("Adding item at %d", n));
+                stringList.add(dictionary.get(n));
+            }
+            renderer.setup(stringList, (x1 - x0) / 2, x1);
             return stringList;
         } else if (method == SupportedMethods.FIRST_N.ordinal()) {
             stringList.addAll(dictionary.subList(0, numberOfWords));
+            renderer.setup(stringList, (x1 - x0) / 2, x1);
             return stringList;
         }
-        throw new InvalidParameterException("Generate method" + method + " not supported.");
+        throw new InvalidParameterException("Generate method " + method + " not supported.");
     }
 
     @Override
     public void setCoordinates(int x0, int y0, int x1, int y1) {
-
+        this.x0 = x0;
+        this.x1 = x1;
+        this.y0 = y0;
+        this.y1 = y1;
     }
 
     @Override

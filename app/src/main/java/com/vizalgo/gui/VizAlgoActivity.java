@@ -34,8 +34,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-public class VizAlgoActivity extends AppCompatActivity implements IRendererListener,
-        AdapterView.OnItemSelectedListener {
+public class VizAlgoActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
     private final static int SHOW_MESSAGE = 1;
 
     private ArrayList<IProblem> problems = ProblemFactory.getProblemSet(this);
@@ -86,6 +85,7 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
             // Find the corresponding EditText.  Note that this assumes the field order is
             // preserved.
             // TODO: Create masked sequential id based on ordering of field in class.
+            // TODO: Move to separate class
             EditText editText = (EditText) layout.getChildAt(index);
             index += 2;
             String textValue = editText.getText().toString();
@@ -158,13 +158,6 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
         return super.onOptionsItemSelected(item);
     }
 
-    private void setPrefInt(String option, int value) {
-        SharedPreferences.Editor e = getSharedPreferences(
-                getString(R.string.preference_file_key), Context.MODE_PRIVATE).edit();
-        e.putInt(option, value);
-        e.apply();
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -195,7 +188,7 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
                 RecyclerView.LayoutParams.MATCH_PARENT));
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        problemRenderer = new ProblemRenderer(this, currentProblem, currentSolution, this, recyclerView);
+        problemRenderer = new ProblemRenderer(this, currentProblem, currentSolution, new RenderListener(), recyclerView);
         renderLayout.addView(problemRenderer);
         renderLayout.addView(recyclerView);
         rootLayout.addView(renderLayout);
@@ -240,6 +233,41 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
         // Another interface callback
+    }
+
+    private class RenderListener implements IRendererListener {
+        @Override
+        public void onProgress(int progress) {
+            progressBar.setProgress(progress);
+        }
+
+        @Override
+        public void onGenerateStart() {
+            progressBar.setProgress(0);
+            setStatusText("Generating..", 0xff00c040);
+        }
+
+        @Override
+        public void onRenderStart() {
+            progressBar.setProgress(0);
+            setStatusText("Solving..", 0xff0000c0);
+        }
+
+        @Override
+        public void onRenderError(String error) {
+            renderError = true;
+        }
+
+        @Override
+        public void onRenderDone() {
+            runThread = null;
+            if (renderError) {
+                setStatusText("Error!", 0xff800080);
+            }
+            if (!cancelled) {
+                setStatusText("Done!", 0xff00a080);
+            }
+        }
     }
 
     private void initProblem() {
@@ -313,39 +341,6 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
         return "problem_" + currentProblem.getClass().getName() + "_spinner_" + id;
     }
 
-    @Override
-    public void onProgress(int progress) {
-        progressBar.setProgress(progress);
-    }
-
-    @Override
-    public void onGenerateStart() {
-        progressBar.setProgress(0);
-        setStatusText("Generating..", 0xff00c040);
-    }
-
-    @Override
-    public void onRenderStart() {
-        progressBar.setProgress(0);
-        setStatusText("Solving..", 0xff0000c0);
-    }
-
-    @Override
-    public void onRenderError(String error) {
-        renderError = true;
-    }
-
-    @Override
-    public void onRenderDone() {
-        runThread = null;
-        if (renderError) {
-            setStatusText("Error!", 0xff800080);
-        }
-        if (!cancelled) {
-            setStatusText("Done!", 0xff00a080);
-        }
-    }
-
     private void setStatusText(String text, int color) {
         Message m = messageHandler.obtainMessage(SHOW_MESSAGE, color, 0, text);
         m.sendToTarget();
@@ -355,5 +350,12 @@ public class VizAlgoActivity extends AppCompatActivity implements IRendererListe
         TextView tv = (TextView)findViewById(R.id.status_text);
         tv.setText(text);
         tv.setTextColor(color);
+    }
+
+    private void setPrefInt(String option, int value) {
+        SharedPreferences.Editor e = getSharedPreferences(
+                getString(R.string.preference_file_key), Context.MODE_PRIVATE).edit();
+        e.putInt(option, value);
+        e.apply();
     }
 }
