@@ -36,8 +36,8 @@ public class AdjacencyList2DGraphRenderer implements
 
     private TextureView textureView;
 
-    public AdjacencyList2DGraphRenderer(Paint p, IRenderer baseRenderer) {
-        paint = p;
+    public AdjacencyList2DGraphRenderer(IRenderer baseRenderer) {
+        paint = new Paint();
         this.baseRenderer = baseRenderer;
     }
 

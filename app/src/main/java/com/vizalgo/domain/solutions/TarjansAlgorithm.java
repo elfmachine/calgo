@@ -1,15 +1,17 @@
 package com.vizalgo.domain.solutions;
 
-import android.graphics.Paint;
+import com.vizalgo.domain.ISolution;
+import com.vizalgo.primitives.AdjacencyListEdge2D;
+import com.vizalgo.primitives.AdjacencyListGraph;
+import com.vizalgo.primitives.AdjacencyListNode2D;
+import com.vizalgo.primitives.Constants;
+import com.vizalgo.primitives.IProgressListener;
+import com.vizalgo.rendering.AdjacencyList2DGraphRenderer;
+import com.vizalgo.rendering.IRenderer;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Stack;
-
-import com.vizalgo.domain.*;
-import com.vizalgo.primitives.*;
-import com.vizalgo.rendering.AdjacencyList2DGraphRenderer;
-import com.vizalgo.rendering.IRenderer;
 
 /**
  * Created by garret on 12/11/15.
@@ -19,10 +21,10 @@ public class TarjansAlgorithm implements ISolution {
         return "Trajan's Algorithm";
     }
 
-    public static int TraversalLineColor = 0xFF8080F0;
-    public static int TraversalNodeColor = 0xFFFFFFFF;
+    public static final int TraversalLineColor = 0xFF8080F0;
+    public static final int TraversalNodeColor = 0xFFFFFFFF;
     public static int FinalLineColor = 0xFF80C080;
-    public static int FinalNodeColor = 0xFF00C000;
+    public static final int FinalNodeColor = 0xFF00C000;
 
     public boolean ShowTraversal = true;
 
@@ -38,15 +40,16 @@ public class TarjansAlgorithm implements ISolution {
 
     private IProgressListener listener;
 
-    public TarjansAlgorithm() {
-        this.listener = listener;
-    }
-
     private int runningProgressCount;
 
     private int progressMax;
 
     private int cycles;
+
+    public TarjansAlgorithm() {
+        renderer = new AdjacencyList2DGraphRenderer(null);
+        solutionRenderer = new AdjacencyList2DGraphRenderer(renderer);
+    }
 
     public Object solve(Object problemRepresentation) {
         traversalGraph = new TarjansAdjacencyListGraph2D(
@@ -163,13 +166,11 @@ public class TarjansAlgorithm implements ISolution {
 
     }
 
-    public IRenderer getRenderer(Paint p) {
-        renderer = new AdjacencyList2DGraphRenderer(p, null);
+    public IRenderer getRenderer() {
         return renderer;
     }
 
-    public IRenderer getSolutionRenderer(Paint p) {
-        solutionRenderer = new AdjacencyList2DGraphRenderer(p, renderer);
+    public IRenderer getSolutionRenderer() {
         return solutionRenderer;
     }
 

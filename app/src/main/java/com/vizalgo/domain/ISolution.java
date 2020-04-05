@@ -1,7 +1,5 @@
 package com.vizalgo.domain;
 
-import android.graphics.Paint;
-
 import com.vizalgo.primitives.IProgressListener;
 import com.vizalgo.rendering.IRenderer;
 
@@ -11,7 +9,9 @@ import com.vizalgo.rendering.IRenderer;
 public interface ISolution {
     String getName();
     Object solve(Object problem);
-    IRenderer getRenderer(Paint p);
-    IRenderer getSolutionRenderer(Paint p);
+
+    IRenderer getRenderer();
+
+    IRenderer getSolutionRenderer();
     void setProgressListener(IProgressListener listener);
 }

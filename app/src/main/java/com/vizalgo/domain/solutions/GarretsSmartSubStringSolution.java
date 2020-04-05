@@ -1,7 +1,5 @@
 package com.vizalgo.domain.solutions;
 
-import android.graphics.Paint;
-
 import com.vizalgo.domain.ISolution;
 import com.vizalgo.primitives.IProgressListener;
 import com.vizalgo.rendering.IRenderer;
@@ -91,12 +89,12 @@ public class GarretsSmartSubStringSolution implements ISolution {
         return render;
     }
 
-    public IRenderer getRenderer(Paint p) {
+    public IRenderer getRenderer() {
         renderer = new StringListRenderer(true);
         return renderer;
     }
 
-    public IRenderer getSolutionRenderer(Paint p) {
+    public IRenderer getSolutionRenderer() {
         solutionRenderer = new StringListRenderer(false);
         return solutionRenderer;
     }

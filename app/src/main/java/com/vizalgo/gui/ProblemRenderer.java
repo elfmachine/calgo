@@ -1,7 +1,6 @@
 package com.vizalgo.gui;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -13,12 +12,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.garretware.graphtestapp.R;
 import com.vizalgo.domain.IProblem;
 import com.vizalgo.domain.ISolution;
 import com.vizalgo.primitives.IGenerator;
 import com.vizalgo.primitives.IProgressListener;
-import com.vizalgo.rendering.AdjacencyList2DGraphRenderer;
 import com.vizalgo.rendering.IRenderer;
 
 import java.util.ArrayList;
@@ -75,8 +72,8 @@ public class ProblemRenderer extends TextureView implements
 
     public void initViews() {
         setVisibility(VISIBLE);
-        problemRenderer = solution.getRenderer(new Paint());
-        solutionRenderer = solution.getSolutionRenderer(new Paint());
+        problemRenderer = solution.getRenderer();
+        solutionRenderer = solution.getSolutionRenderer();
         if (solutionRenderer.supportsRecyclerView()) {
             // Make TextureView transparent.
             altView.setAdapter(new TextRecyclerViewAdapter(new ArrayList<String>()));
@@ -124,10 +121,6 @@ public class ProblemRenderer extends TextureView implements
     @Override
     public void run() {
         System.out.println("Start render run");
-        SharedPreferences sharedPref = context.getSharedPreferences(
-                context.getString(R.string.preference_file_key), Context.MODE_PRIVATE);
-
-        int renderOption = sharedPref.getInt("renderOption", -1);
         Canvas canvas = null;
         try
         {
@@ -141,36 +134,6 @@ public class ProblemRenderer extends TextureView implements
                 unlockCanvasAndPost(canvas);
                 canvas = null;
                 problemRenderer.setTextureView(this);
-            }
-            // TODO: Move to datamodel, use annotation to denote.
-            if (problemRenderer instanceof AdjacencyList2DGraphRenderer) {
-                AdjacencyList2DGraphRenderer adjacencyList2DGraphRenderer = (AdjacencyList2DGraphRenderer) problemRenderer;
-                AdjacencyList2DGraphRenderer adjacencyList2DGraphSolutionRenderer = null;
-                if (solutionRenderer instanceof AdjacencyList2DGraphRenderer) {
-                    adjacencyList2DGraphSolutionRenderer = (AdjacencyList2DGraphRenderer) solutionRenderer;
-                }
-                switch (renderOption) {
-                    case R.id.draw_everything:
-                        adjacencyList2DGraphRenderer.setRenderOptions(true, false, true);
-                        if (adjacencyList2DGraphSolutionRenderer != null) {
-                            adjacencyList2DGraphSolutionRenderer.setRenderOptions(true, true, true);
-                        }
-                        break;
-
-                    case R.id.only_completion:
-                        adjacencyList2DGraphRenderer.setRenderOptions(false, false, true);
-                        if (adjacencyList2DGraphSolutionRenderer != null) {
-                            adjacencyList2DGraphSolutionRenderer.setRenderOptions(false, false, true);
-                        }
-                        break;
-
-                    case R.id.only_traversal:
-                        adjacencyList2DGraphRenderer.setRenderOptions(false, false, true);
-                        if (adjacencyList2DGraphSolutionRenderer != null) {
-                            adjacencyList2DGraphSolutionRenderer.setRenderOptions(true, true, true);
-                        }
-                        break;
-                }
             }
             if (Thread.currentThread().isInterrupted()) {
                 System.out.println("Interrupt before generate");

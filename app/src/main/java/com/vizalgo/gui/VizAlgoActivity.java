@@ -10,8 +10,11 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.SubMenu;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -26,6 +29,7 @@ import com.garretware.graphtestapp.R;
 import com.vizalgo.domain.IProblem;
 import com.vizalgo.domain.ISolution;
 import com.vizalgo.domain.ProblemFactory;
+import com.vizalgo.domain.problems.CheckableOption;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -51,13 +55,10 @@ public class VizAlgoActivity extends AppCompatActivity implements AdapterView.On
 
     private ProgressBar progressBar;
 
-    private int renderOption;
     private boolean cancelled;
-
-    private Object dataModel;
-
     private boolean renderError;
 
+    private Object dataModel;
     private SharedPreferences sharedPref;
 
     public VizAlgoActivity() {
@@ -78,36 +79,6 @@ public class VizAlgoActivity extends AppCompatActivity implements AdapterView.On
 
     public void startSolver(View view) {
         renderError = false;
-
-        LinearLayout layout = (LinearLayout) findViewById(R.id.graphOptions);
-        int index = 1;
-        for (Field f : dataModel.getClass().getFields()) {
-            // Find the corresponding EditText.  Note that this assumes the field order is
-            // preserved.
-            // TODO: Create masked sequential id based on ordering of field in class.
-            // TODO: Move to separate class
-            EditText editText = (EditText) layout.getChildAt(index);
-            index += 2;
-            String textValue = editText.getText().toString();
-
-            try {
-                if (f.getType() == int.class || f.getType() == Integer.class) {
-                    f.set(dataModel, Integer.valueOf(textValue));
-                } else if (f.getType() == String.class) {
-                    f.set(dataModel, textValue);
-                } else {
-                    System.out.println(
-                            String.format(
-                                    "WARNING: Don't know what to do with field of type %s for %s",
-                                    f.getType(), f.getName()));
-                }
-            } catch (IllegalAccessException e) {
-                System.out.println(
-                        String.format("IllegalAccessException reading view for: %s\n%s"
-                                + f.getName(), e));
-            }
-        }
-
         currentProblem.setDataModel(dataModel);
 
         if (runThread == null) {
@@ -123,39 +94,6 @@ public class VizAlgoActivity extends AppCompatActivity implements AdapterView.On
             cancelled = true;
             handleStop();
         }
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_graph, menu);
-
-        renderOption = sharedPref.getInt("renderOption", -1);
-        if (renderOption != -1 && menu.findItem(renderOption) != null) {
-            menu.findItem(renderOption).setChecked(true);
-        }
-
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        if (item.isCheckable()) {
-            item.setChecked(true);
-            setPrefInt("renderOption", id);
-        }
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -176,10 +114,13 @@ public class VizAlgoActivity extends AppCompatActivity implements AdapterView.On
         }
 
         setupSpinner("problem", problemNames, R.id.problem_spinner);
+        currentProblem = problems.get(sharedPref.getInt("problem", 0));
+        dataModel = currentProblem.getDefaultDataModel();
+        readDataModel();
         initProblem();
 
         // Set up render view.
-        LinearLayout rootLayout = (LinearLayout)findViewById(R.id.vizalgo_root_view);
+        LinearLayout rootLayout = (LinearLayout) findViewById(R.id.vizalgo_root_view);
         FrameLayout renderLayout = new FrameLayout(this);
         renderLayout.setLayoutParams(new FrameLayout.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT,
                 RecyclerView.LayoutParams.MATCH_PARENT));
@@ -194,8 +135,75 @@ public class VizAlgoActivity extends AppCompatActivity implements AdapterView.On
         rootLayout.addView(renderLayout);
         currentSolution.setProgressListener(problemRenderer);
 
-        progressBar = (ProgressBar)findViewById(R.id.progressBar);
+        progressBar = (ProgressBar) findViewById(R.id.progressBar);
         progressBar.setMax(100);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        for (Field f : dataModel.getClass().getFields()) {
+            try {
+                int group = Menu.FIRST;
+                if (f.getType().equals(CheckableOption.class)) {
+                    CheckableOption checkableOption = (CheckableOption) f.get(dataModel);
+                    SubMenu subMenu = menu.addSubMenu(checkableOption.getTitle());
+                    int i = Menu.FIRST;
+                    for (String item : checkableOption.getOptions()) {
+                        MenuItem menuItem = subMenu.add(group, i, i, item);
+                        menuItem.setCheckable(true);
+                        i++;
+                    }
+                    subMenu.getItem(checkableOption.Value).setChecked(true);
+                    subMenu.setGroupCheckable(group, true, true);
+                    subMenu.setGroupEnabled(group, true);
+                    group++;
+                }
+            } catch (IllegalAccessException e) {
+                System.out.println(
+                        String.format("IllegalAccessException constructing menu for: %s\n%s"
+                                + f.getName(), e));
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if (item.isCheckable()) {
+            item.setChecked(true);
+
+            // Search entire data model to find matching menu item.  This is inefficient and
+            // fragile.  It will break with multiple menu items of the same id.
+            for (Field f : dataModel.getClass().getFields()) {
+                try {
+                    if (f.getType().equals(CheckableOption.class)) {
+                        CheckableOption dropDown = (CheckableOption) f.get(dataModel);
+                        int i = 0;
+                        for (String mi : dropDown.getOptions()) {
+                            if (item.getTitle().equals(mi)) {
+                                dropDown.Value = i;
+                                break;
+                            }
+                            i++;
+                        }
+                    }
+                } catch (IllegalAccessException e) {
+                    System.out.println(
+                            String.format("IllegalAccessException setting menu for: %s\n%s"
+                                    + f.getName(), e));
+                }
+            }
+        }
+        writeDataModel();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -208,7 +216,6 @@ public class VizAlgoActivity extends AppCompatActivity implements AdapterView.On
     @Override
     public void onItemSelected(AdapterView<?> parent, View view,
                                int pos, long id) {
-        System.out.println("onItemSelected " + pos + "," + id + "on adapter " + parent.getId());
         if (parent.getId() == R.id.problem_spinner) {
             setPrefInt("problem", pos);
             initProblem();
@@ -270,30 +277,50 @@ public class VizAlgoActivity extends AppCompatActivity implements AdapterView.On
         }
     }
 
-    private void initProblem() {
-        currentProblem = problems.get(sharedPref.getInt("problem", 0));
-        dataModel = currentProblem.getDefaultDataModel();
+    private TextWatcher updateAllFieldsWatcher =
+            new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    updateDataModelFromtextFields();
+                    writeDataModel();
+                }
+            };
+
+    private void initProblem() {
         LinearLayout layout = (LinearLayout) findViewById(R.id.graphOptions);
         layout.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
         layout.removeAllViews();
         for (Field f : dataModel.getClass().getFields()) {
-            // Add TextView which describes the object.
-            TextView textView = new TextView(this);
-            textView.setText(f.getName());
-            layout.addView(textView);
-
-            // Add EditText to edit the object.
-            EditText editText = new EditText(this);
             try {
-                editText.setText(f.get(dataModel).toString());
+                if (!f.getType().equals(CheckableOption.class)) {
+                    // Add TextView which describes the object.
+                    TextView textView = new TextView(this);
+                    textView.setText(f.getName());
+                    layout.addView(textView);
+
+                    // Add EditText to edit the object.
+                    EditText editText = new EditText(this);
+                    editText.addTextChangedListener(updateAllFieldsWatcher);
+
+                    editText.setText(f.get(dataModel).toString());
+                    layout.addView(editText);
+                }
             } catch (IllegalAccessException e) {
                 System.out.println(
                         String.format("IllegalAccessException constructing view for: %s\n%s"
                                 + f.getName(), e));
             }
-            layout.addView(editText);
         }
 
         solutions = currentProblem.getSolutions(problemRenderer);
@@ -323,7 +350,6 @@ public class VizAlgoActivity extends AppCompatActivity implements AdapterView.On
         Spinner spinner = (Spinner) findViewById(id);
         spinner.setAdapter(adapter);
         int value = sharedPref.getInt(pref, -1);
-        System.out.println(String.format("Spinner for %s is %d", pref, value));
         if (value != -1) {
             spinner.setSelection(value);
         }
@@ -353,9 +379,103 @@ public class VizAlgoActivity extends AppCompatActivity implements AdapterView.On
     }
 
     private void setPrefInt(String option, int value) {
-        SharedPreferences.Editor e = getSharedPreferences(
-                getString(R.string.preference_file_key), Context.MODE_PRIVATE).edit();
+        SharedPreferences.Editor e = sharedPref.edit();
         e.putInt(option, value);
         e.apply();
+    }
+
+    private void updateDataModelFromtextFields() {
+        // TODO: Break out into method for each individual item and move to separate class.
+        LinearLayout layout = (LinearLayout) findViewById(R.id.graphOptions);
+        int index = 1;
+        for (Field f : dataModel.getClass().getFields()) {
+            if (f.getType() == CheckableOption.class) {
+                // This is set in onOptionItemSelected.
+                continue;
+            }
+            // Find the corresponding EditText.  Note that this assumes the field order is
+            // preserved.
+            // TODO: Create masked sequential id based on ordering of field in class.
+            // TODO: Move to separate class
+            EditText editText = (EditText) layout.getChildAt(index);
+            if (editText == null) {
+                // This may get called when the TextViews are being created.
+                break;
+            }
+            index += 2;
+            String textValue = editText.getText().toString();
+
+            try {
+                if (f.getType() == int.class || f.getType() == Integer.class) {
+                    f.set(dataModel, Integer.valueOf(textValue));
+                } else if (f.getType() == String.class) {
+                    f.set(dataModel, textValue);
+                } else {
+                    System.out.println(
+                            String.format(
+                                    "WARNING: Don't know what to do with field of type %s for %s",
+                                    f.getType(), f.getName()));
+                }
+            } catch (IllegalAccessException e) {
+                System.out.println(
+                        String.format("IllegalAccessException reading view for: %s\n%s"
+                                + f.getName(), e));
+            }
+        }
+    }
+
+    private void writeDataModel() {
+        // TODO: Add API To write individual option for efficiency
+        SharedPreferences.Editor e = sharedPref.edit();
+        for (Field f : dataModel.getClass().getFields()) {
+            try {
+                if (f.getType() == CheckableOption.class) {
+                    CheckableOption option = (CheckableOption) f.get(dataModel);
+                    e.putInt(getPref(f), option.Value);
+                } else if (f.getType() == int.class || f.getType() == Integer.class) {
+                    e.putInt(getPref(f), f.getInt(dataModel));
+                } else if (f.getType() == String.class) {
+                    e.putString(getPref(f), f.get(dataModel).toString());
+                } else {
+                    System.out.println(
+                            String.format(
+                                    "WARNING: Don't know what to do with field of type %s for %s",
+                                    f.getType(), f.getName()));
+                }
+            } catch (IllegalAccessException ex) {
+                System.out.println(
+                        String.format("IllegalAccessException reading view for: %s\n%s"
+                                + f.getName(), ex));
+            }
+        }
+        e.apply();
+    }
+
+    private void readDataModel() {
+        for (Field f : dataModel.getClass().getFields()) {
+            try {
+                if (f.getType() == CheckableOption.class) {
+                    CheckableOption option = (CheckableOption) f.get(dataModel);
+                    option.Value = sharedPref.getInt(getPref(f), option.Value);
+                } else if (f.getType() == int.class || f.getType() == Integer.class) {
+                    f.setInt(dataModel, sharedPref.getInt(getPref(f), f.getInt(dataModel)));
+                } else if (f.getType() == String.class) {
+                    f.set(dataModel, sharedPref.getString(getPref(f), f.get(dataModel).toString()));
+                } else {
+                    System.out.println(
+                            String.format(
+                                    "WARNING: Don't know what to do with field of type %s for %s",
+                                    f.getType(), f.getName()));
+                }
+            } catch (IllegalAccessException e) {
+                System.out.println(
+                        String.format("IllegalAccessException reading view for: %s\n%s"
+                                + f.getName(), e));
+            }
+        }
+    }
+
+    private String getPref(Field field) {
+        return currentProblem.getName() + "_" + field.getName();
     }
 }
