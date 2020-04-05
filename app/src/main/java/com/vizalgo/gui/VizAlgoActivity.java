@@ -61,6 +61,8 @@ public class VizAlgoActivity extends AppCompatActivity implements AdapterView.On
     private Object dataModel;
     private SharedPreferences sharedPref;
 
+    private DataModelTranslator translator;
+
     public VizAlgoActivity() {
         messageHandler = new Handler(Looper.getMainLooper()) {
             @Override
@@ -77,31 +79,12 @@ public class VizAlgoActivity extends AppCompatActivity implements AdapterView.On
         };
     }
 
-    public void startSolver(View view) {
-        renderError = false;
-        currentProblem.setDataModel(dataModel);
-
-        if (runThread == null) {
-            runThread = new Thread(problemRenderer);
-            runThread.start();
-            cancelled = false;
-        }
-    }
-
-    public void cancelSolve(View view) {
-        if (runThread != null) {
-            setStatusText("Cancelled", 0xffff8000);
-            cancelled = true;
-            handleStop();
-        }
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         sharedPref = getSharedPreferences(
                 getString(R.string.preference_file_key), Context.MODE_PRIVATE);
+        translator = new DataModelTranslator(sharedPref);
 
         setContentView(R.layout.activity_viz_algo);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -115,8 +98,6 @@ public class VizAlgoActivity extends AppCompatActivity implements AdapterView.On
 
         setupSpinner("problem", problemNames, R.id.problem_spinner);
         currentProblem = problems.get(sharedPref.getInt("problem", 0));
-        dataModel = currentProblem.getDefaultDataModel();
-        readDataModel();
         initProblem();
 
         // Set up render view.
@@ -141,6 +122,7 @@ public class VizAlgoActivity extends AppCompatActivity implements AdapterView.On
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        menu.clear();
         for (Field f : dataModel.getClass().getFields()) {
             try {
                 int group = Menu.FIRST;
@@ -170,33 +152,10 @@ public class VizAlgoActivity extends AppCompatActivity implements AdapterView.On
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-
         if (item.isCheckable()) {
             item.setChecked(true);
-
-            // Search entire data model to find matching menu item.  This is inefficient and
-            // fragile.  It will break with multiple menu items of the same id.
-            for (Field f : dataModel.getClass().getFields()) {
-                try {
-                    if (f.getType().equals(CheckableOption.class)) {
-                        CheckableOption dropDown = (CheckableOption) f.get(dataModel);
-                        int i = 0;
-                        for (String mi : dropDown.getOptions()) {
-                            if (item.getTitle().equals(mi)) {
-                                dropDown.Value = i;
-                                break;
-                            }
-                            i++;
-                        }
-                    }
-                } catch (IllegalAccessException e) {
-                    System.out.println(
-                            String.format("IllegalAccessException setting menu for: %s\n%s"
-                                    + f.getName(), e));
-                }
-            }
+            translator.setOptionValue(dataModel, item.getTitle().toString());
         }
-        writeDataModel();
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
@@ -217,7 +176,9 @@ public class VizAlgoActivity extends AppCompatActivity implements AdapterView.On
     public void onItemSelected(AdapterView<?> parent, View view,
                                int pos, long id) {
         if (parent.getId() == R.id.problem_spinner) {
+            currentProblem = problems.get(pos);
             setPrefInt("problem", pos);
+            translator.setProblemName(currentProblem.getName());
             initProblem();
             problemRenderer.updateProblem(currentProblem);
             problemRenderer.updateSolution(currentSolution);
@@ -277,6 +238,25 @@ public class VizAlgoActivity extends AppCompatActivity implements AdapterView.On
         }
     }
 
+    public void startSolver(View view) {
+        renderError = false;
+        currentProblem.setDataModel(dataModel);
+
+        if (runThread == null) {
+            runThread = new Thread(problemRenderer);
+            runThread.start();
+            cancelled = false;
+        }
+    }
+
+    public void cancelSolve(View view) {
+        if (runThread != null) {
+            setStatusText("Cancelled", 0xffff8000);
+            cancelled = true;
+            handleStop();
+        }
+    }
+
     private TextWatcher updateAllFieldsWatcher =
             new TextWatcher() {
                 @Override
@@ -291,37 +271,35 @@ public class VizAlgoActivity extends AppCompatActivity implements AdapterView.On
 
                 @Override
                 public void afterTextChanged(Editable s) {
-                    updateDataModelFromtextFields();
-                    writeDataModel();
+                    translator.updateDataModelFromTextFields(findViewById(R.id.graphOptions), dataModel);
+                    translator.writeDataModel(dataModel);
                 }
             };
 
     private void initProblem() {
+        dataModel = currentProblem.getDefaultDataModel();
+        translator.setProblemName(currentProblem.getName());
+        ;
         LinearLayout layout = (LinearLayout) findViewById(R.id.graphOptions);
         layout.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
         layout.removeAllViews();
-        for (Field f : dataModel.getClass().getFields()) {
+        translator.readDataModel(dataModel, f -> {
+            // Add TextView which describes the object.
+            TextView textView = new TextView(this);
+            textView.setText(f.getName());
+            layout.addView(textView);
+
+            // Add EditText to edit the object.
+            EditText editText = new EditText(this);
             try {
-                if (!f.getType().equals(CheckableOption.class)) {
-                    // Add TextView which describes the object.
-                    TextView textView = new TextView(this);
-                    textView.setText(f.getName());
-                    layout.addView(textView);
-
-                    // Add EditText to edit the object.
-                    EditText editText = new EditText(this);
-                    editText.addTextChangedListener(updateAllFieldsWatcher);
-
-                    editText.setText(f.get(dataModel).toString());
-                    layout.addView(editText);
-                }
-            } catch (IllegalAccessException e) {
-                System.out.println(
-                        String.format("IllegalAccessException constructing view for: %s\n%s"
-                                + f.getName(), e));
+                editText.setText(f.get(dataModel).toString());
+            } catch (IllegalAccessException iae) {
+                System.out.println("Fuck, we got an IllegalAccessException in the lambda.");
             }
-        }
+            editText.addTextChangedListener(updateAllFieldsWatcher);
+            layout.addView(editText);
+        });
 
         solutions = currentProblem.getSolutions(problemRenderer);
         List<String> solutionNames = new LinkedList<>();
@@ -340,6 +318,7 @@ public class VizAlgoActivity extends AppCompatActivity implements AdapterView.On
             names.add(generators.get(i));
         }
         setupSpinner(getSpinnerName("generator"), names, R.id.generator_spinner);
+        invalidateOptionsMenu();
     }
 
     private void setupSpinner(String pref, List<String> strings, int id) {
@@ -382,100 +361,5 @@ public class VizAlgoActivity extends AppCompatActivity implements AdapterView.On
         SharedPreferences.Editor e = sharedPref.edit();
         e.putInt(option, value);
         e.apply();
-    }
-
-    private void updateDataModelFromtextFields() {
-        // TODO: Break out into method for each individual item and move to separate class.
-        LinearLayout layout = (LinearLayout) findViewById(R.id.graphOptions);
-        int index = 1;
-        for (Field f : dataModel.getClass().getFields()) {
-            if (f.getType() == CheckableOption.class) {
-                // This is set in onOptionItemSelected.
-                continue;
-            }
-            // Find the corresponding EditText.  Note that this assumes the field order is
-            // preserved.
-            // TODO: Create masked sequential id based on ordering of field in class.
-            // TODO: Move to separate class
-            EditText editText = (EditText) layout.getChildAt(index);
-            if (editText == null) {
-                // This may get called when the TextViews are being created.
-                break;
-            }
-            index += 2;
-            String textValue = editText.getText().toString();
-
-            try {
-                if (f.getType() == int.class || f.getType() == Integer.class) {
-                    f.set(dataModel, Integer.valueOf(textValue));
-                } else if (f.getType() == String.class) {
-                    f.set(dataModel, textValue);
-                } else {
-                    System.out.println(
-                            String.format(
-                                    "WARNING: Don't know what to do with field of type %s for %s",
-                                    f.getType(), f.getName()));
-                }
-            } catch (IllegalAccessException e) {
-                System.out.println(
-                        String.format("IllegalAccessException reading view for: %s\n%s"
-                                + f.getName(), e));
-            }
-        }
-    }
-
-    private void writeDataModel() {
-        // TODO: Add API To write individual option for efficiency
-        SharedPreferences.Editor e = sharedPref.edit();
-        for (Field f : dataModel.getClass().getFields()) {
-            try {
-                if (f.getType() == CheckableOption.class) {
-                    CheckableOption option = (CheckableOption) f.get(dataModel);
-                    e.putInt(getPref(f), option.Value);
-                } else if (f.getType() == int.class || f.getType() == Integer.class) {
-                    e.putInt(getPref(f), f.getInt(dataModel));
-                } else if (f.getType() == String.class) {
-                    e.putString(getPref(f), f.get(dataModel).toString());
-                } else {
-                    System.out.println(
-                            String.format(
-                                    "WARNING: Don't know what to do with field of type %s for %s",
-                                    f.getType(), f.getName()));
-                }
-            } catch (IllegalAccessException ex) {
-                System.out.println(
-                        String.format("IllegalAccessException reading view for: %s\n%s"
-                                + f.getName(), ex));
-            }
-        }
-        e.apply();
-    }
-
-    private void readDataModel() {
-        for (Field f : dataModel.getClass().getFields()) {
-            try {
-                if (f.getType() == CheckableOption.class) {
-                    CheckableOption option = (CheckableOption) f.get(dataModel);
-                    option.Value = sharedPref.getInt(getPref(f), option.Value);
-                } else if (f.getType() == int.class || f.getType() == Integer.class) {
-                    f.setInt(dataModel, sharedPref.getInt(getPref(f), f.getInt(dataModel)));
-                } else if (f.getType() == String.class) {
-                    f.set(dataModel, sharedPref.getString(getPref(f), f.get(dataModel).toString()));
-                } else {
-                    System.out.println(
-                            String.format(
-                                    "WARNING: Don't know what to do with field of type %s for %s",
-                                    f.getType(), f.getName()));
-                }
-            } catch (IllegalAccessException e) {
-                System.out.println(
-                        String.format("IllegalAccessException reading view for: %s\n%s"
-                                + f.getName(), e));
-            }
-        }
-    }
-
-    private String getPref(Field field) {
-        return currentProblem.getName() + "_" + field.getName();
     }
 }

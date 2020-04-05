@@ -159,11 +159,7 @@ public class ProblemRenderer extends TextureView implements
             System.out.println(String.format("Finished solve in %dms", System.currentTimeMillis() - time));
 
             if (solutionRenderer.supportsRecyclerView()) {
-                post(new Runnable() {
-                    public void run() {
-                        altView.setAdapter(new TextRecyclerViewAdapter((List<String>) result));
-                    }
-                });
+                post(() -> altView.setAdapter(new TextRecyclerViewAdapter((List<String>) result)));
             }
             if (problemRenderer.supportsCanvas() || solutionRenderer.supportsCanvas()) {
                 canvas = lockCanvas();

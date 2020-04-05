@@ -7,9 +7,6 @@ import java.util.List;
  * Created by garrethamann on 12/25/15.
  */
 public class AdjacencyListGraphDataModel {
-    public int Nodes;
-    public int Edges;
-
     public CheckableOption RenderOption = new CheckableOption() {
         @Override
         public String getTitle() {
@@ -26,5 +23,8 @@ public class AdjacencyListGraphDataModel {
             return ll;
         }
     };
+
+    public int Nodes;
+    public int Edges;
 }
 
