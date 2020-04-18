@@ -21,10 +21,10 @@ import java.util.Iterator;
  */
 public class AdjacencyList2DGraphRenderer implements
         IAdjacencyListChangeListener<AdjacencyListNode2D>, IRenderer {
-    public int EdgeThickness = 3;
-    public int PointRadius = 3;
-    public int ArrowAngle = 25;
-    public int ArrowLength = 20;
+    private int EdgeThickness = 3;
+    private int PointRadius = 3;
+    private int ArrowAngle = 25;
+    private int ArrowLength = 20;
 
     private Paint paint;
     private AdjacencyListGraph<AdjacencyListNode2D> graph;
@@ -47,18 +47,18 @@ public class AdjacencyList2DGraphRenderer implements
     }
 
     @Override
-    public void render(Canvas canvas) {
+    public void render(Canvas canvas, Rect rect) {
         for (Iterator it = graph.getAllNodes().entrySet().iterator();
              it.hasNext(); ) {
             AdjacencyListNode2D node = (AdjacencyListNode2D)((HashMap.Entry)it.next()).getValue();
             for (Iterator it2 = node.getEdges().iterator();
                  it2.hasNext(); ) {
-                drawEdge(canvas, (AdjacencyListEdge2D)it2.next());
+                drawEdge(canvas, (AdjacencyListEdge2D) it2.next(), rect);
             }
         }
         for (Iterator it = graph.getAllNodes().entrySet().iterator();
              it.hasNext(); ) {
-            drawNode(canvas, (AdjacencyListNode2D)((HashMap.Entry)it.next()).getValue());
+            drawNode(canvas, (AdjacencyListNode2D) ((HashMap.Entry) it.next()).getValue(), rect);
         }
     }
 
@@ -121,47 +121,51 @@ public class AdjacencyList2DGraphRenderer implements
             Canvas canvas = textureView.lockCanvas(dirty);
             // Render base graph or clear the canvas prior to each draw iteration
             if (baseRenderer != null) {
-                baseRenderer.render(canvas);
+                baseRenderer.render(canvas, dirty);
             }
             else {
                 canvas.drawColor(Color.rgb(0, 0, 0));
             }
-            render(canvas);
+            render(canvas, dirty);
             textureView.unlockCanvasAndPost(canvas);
         }
         catch (Exception ex) {
             System.out.println("Got exception in drawGraph(): " + ex);
         }
-        finally {
+    }
+
+    private void drawNode(Canvas canvas, AdjacencyListNode2D node, Rect dirtyRect) {
+        if (dirtyRect == null || dirtyRect.contains(node.getX(), node.getY())) {
+            paint.setColor(node.getColor());
+            canvas.drawCircle(node.getX(), node.getY(), PointRadius, paint);
         }
     }
 
-    private void drawNode(Canvas canvas, AdjacencyListNode2D node) {
-        paint.setColor(node.getColor());
-        canvas.drawCircle(node.getX(), node.getY(), PointRadius, paint);
-    }
+    private void drawEdge(Canvas canvas, AdjacencyListEdge2D edge, Rect dirtyRect) {
+        Rect edgeRect = rectFromEdge(edge);
+        if (dirtyRect == null || Rect.intersects(dirtyRect, edgeRect)
+                || dirtyRect.contains(edgeRect) || edgeRect.contains(dirtyRect)) {
+            paint.setColor(edge.getColor());
+            paint.setStrokeWidth(EdgeThickness);
+            AdjacencyListNode2D start = ((AdjacencyListNode2D) edge.getStartNode());
+            AdjacencyListNode2D end = ((AdjacencyListNode2D) edge.getEndNode());
 
-    private void drawEdge(Canvas canvas, AdjacencyListEdge2D edge) {
-        paint.setColor(edge.getColor());
-        paint.setStrokeWidth(EdgeThickness);
-        AdjacencyListNode2D start = ((AdjacencyListNode2D)edge.getStartNode());
-        AdjacencyListNode2D end = ((AdjacencyListNode2D)edge.getEndNode());
+            // Arrows
+            if (edge.isDirected()) {
+                paint.setStrokeWidth(2);
+                double angle = Math.atan2(start.getY() - end.getY(), start.getX() - end.getX());
+                double arrow1_angle = angle - Math.toRadians(ArrowAngle);
+                double arrow2_angle = angle + Math.toRadians(ArrowAngle);
+                canvas.drawLine((float) (end.getX() + Math.cos(arrow1_angle) * ArrowLength),
+                        (float) (end.getY() + Math.sin(arrow1_angle) * ArrowLength),
+                        end.getX(), end.getY(), paint);
+                canvas.drawLine((float) (end.getX() + Math.cos(arrow2_angle) * ArrowLength),
+                        (float) (end.getY() + Math.sin(arrow2_angle) * ArrowLength),
+                        end.getX(), end.getY(), paint);
+            }
 
-        // Arrows
-        if (edge.isDirected()) {
-            paint.setStrokeWidth(2);
-            double angle = Math.atan2(start.getY() - end.getY(), start.getX() - end.getX());
-            double arrow1_angle = angle - Math.toRadians(ArrowAngle);
-            double arrow2_angle = angle + Math.toRadians(ArrowAngle);
-            canvas.drawLine((float)(end.getX() + Math.cos(arrow1_angle) * ArrowLength),
-                    (float)(end.getY() + Math.sin(arrow1_angle) * ArrowLength),
-                    end.getX(), end.getY(), paint);
-            canvas.drawLine((float)(end.getX() + Math.cos(arrow2_angle) * ArrowLength),
-                    (float)(end.getY() + Math.sin(arrow2_angle) * ArrowLength),
-                    end.getX(), end.getY(), paint);
+            canvas.drawLine(start.getX(), start.getY(), end.getX(), end.getY(), paint);
         }
-
-        canvas.drawLine(start.getX(), start.getY(), end.getX(), end.getY(), paint);
     }
 
     private Rect rectFromEdge(IAdjacencyListGraphEdgeType e) {

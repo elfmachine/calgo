@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.TextureView;
@@ -63,8 +64,9 @@ public class ProblemRenderer extends TextureView implements
     }
 
     private class TextViewHolder extends RecyclerView.ViewHolder {
-        public TextView mTextView;
-        public TextViewHolder(View itemView) {
+        TextView mTextView;
+
+        TextViewHolder(View itemView) {
             super(itemView);
             mTextView = (TextView) itemView;
         }
@@ -76,7 +78,7 @@ public class ProblemRenderer extends TextureView implements
         solutionRenderer = solution.getSolutionRenderer();
         if (solutionRenderer.supportsRecyclerView()) {
             // Make TextureView transparent.
-            altView.setAdapter(new TextRecyclerViewAdapter(new ArrayList<String>()));
+            altView.setAdapter(new TextRecyclerViewAdapter(new ArrayList<>()));
             setOpaque(false);
             setAlpha(0.5f);
             altView.setVisibility(VISIBLE);
@@ -96,12 +98,12 @@ public class ProblemRenderer extends TextureView implements
     private class TextRecyclerViewAdapter extends RecyclerView.Adapter<TextViewHolder> {
         List<String> contents;
 
-        public TextRecyclerViewAdapter(List<String> contents) {
+        TextRecyclerViewAdapter(List<String> contents) {
             this.contents = contents;
         }
 
         @Override
-        public TextViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        public TextViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             LayoutInflater layoutInflater = LayoutInflater.from(context);
             View view = layoutInflater.inflate(android.R.layout.simple_list_item_1, parent, false);
             return new TextViewHolder(view);
@@ -193,10 +195,10 @@ public class ProblemRenderer extends TextureView implements
     private void renderResult(Canvas c, Object result, IRenderer renderer, IRenderer solutionRenderer) {
         // TODO: Find way to avoid rerendering here.
         if (renderer.supportsCanvas()) {
-            renderer.render(c);
+            renderer.render(c, null);
         }
         if (solutionRenderer.supportsCanvas()) {
-            solutionRenderer.render(c);
+            solutionRenderer.render(c, null);
         }
         if (result instanceof String) {
             String s = (String)result;

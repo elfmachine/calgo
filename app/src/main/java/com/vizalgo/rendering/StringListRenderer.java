@@ -20,7 +20,7 @@ public class StringListRenderer implements IRenderer {
         this.render = render;
     }
 
-    public void render(Canvas canvas) {
+    public void render(Canvas canvas, Rect dirty) {
         if (!render) return;
         canvas.drawColor(Color.rgb(0, 0, 0));
         int x = left, y = 0;
